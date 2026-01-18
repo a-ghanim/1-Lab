@@ -51,8 +51,8 @@ export default function Landing() {
             </h1>
 
             <p className="section-subtitle mx-auto">
-              Type any topic and watch AI generate a complete curriculum with 
-              interactive simulations, quizzes, and curated resources.
+              Upload documents, ask questions, and get AI-powered insights.
+              Your personal research assistant that learns from your sources.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
@@ -114,18 +114,18 @@ export default function Landing() {
             {[
               {
                 icon: Brain,
-                title: "AI Curriculum",
-                description: "Generate complete courses from any topic with structured modules and objectives"
+                title: "AI Chat",
+                description: "Have intelligent conversations grounded in your documents and sources"
               },
               {
                 icon: Zap,
-                title: "Interactive Sims",
-                description: "Visualize complex concepts with p5.js simulations you can interact with"
+                title: "Instant Insights",
+                description: "Get summaries, key takeaways, and study guides from any document"
               },
               {
                 icon: BookOpen,
-                title: "Smart Resources",
-                description: "Curated papers, lectures, and books tailored to your learning goals"
+                title: "Smart Sources",
+                description: "Upload PDFs, paste text, or add URLs to build your knowledge base"
               }
             ].map((feature, idx) => (
               <motion.div

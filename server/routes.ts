@@ -68,7 +68,6 @@ Output Format: Valid JSON only, no markdown code blocks.
       "order": 1,
       "estimatedMinutes": 30,
       "content": { "overview": "Module overview text" },
-      "simulationCode": "// p5.js instance mode code for interactive visualization (use 'p' as instance)",
       "quizzes": [
         { "question": "...", "options": ["Option A text", "Option B text", "Option C text", "Option D text"], "correctAnswer": "Option A text (MUST be the EXACT full text of correct option, NOT a letter)", "explanation": "Why this answer is correct" }
       ],
@@ -81,11 +80,9 @@ Output Format: Valid JSON only, no markdown code blocks.
 
 Rules:
 1. Create 4-6 modules with progressive difficulty
-2. Each module should have 1-2 quizzes and 2-3 resources
-3. Simulation code must be valid p5.js instance mode (use 'p' as variable)
-4. Resources should be real, educational content when possible
-5. Make simulations interactive and visually engaging
-6. Canvas size: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)`;
+2. Each module should have 2-3 quizzes and 3-4 resources
+3. Resources should be real, educational content when possible
+4. Content should be comprehensive and educational like a textbook`;
 
 const COURSE_OUTLINE_PROMPT = `You are an expert curriculum designer. Generate a course OUTLINE only (no content yet).
 
@@ -107,26 +104,19 @@ Rules:
 
 const MODULE_CONTENT_PROMPT = `You are an expert educator creating comprehensive online course content. Generate COMPLETE, SUBSTANTIAL content for a single module.
 
-IMPORTANT: Choose the BEST simulation library for the topic:
-- "matter" for physics with collisions, gravity, forces, mechanics (use Matter.js)
-- "three" for 3D visualizations like molecules, astronomy, 3D geometry (use Three.js)  
-- "d3" for data visualization, statistics, graphs, networks (use D3.js)
-- "p5" for general 2D animations, art, simple visualizations (use p5.js)
-
 Output Format: Valid JSON only, no markdown code blocks.
 {
   "content": {
     "overview": "Comprehensive 3-4 paragraph introduction explaining the topic, its importance, and what the student will learn. Write like a textbook introduction.",
-    "keyPoints": ["Key concept 1 with brief explanation", "Key concept 2 with brief explanation", "Key concept 3", "Key concept 4", "Key concept 5"],
-    "detailedExplanation": "In-depth 4-6 paragraph explanation of the core concepts. Include formulas, definitions, historical context, and real-world applications. This should be the main educational content - thorough and informative like a textbook chapter.",
+    "keyPoints": ["Key concept 1 with detailed explanation", "Key concept 2 with detailed explanation", "Key concept 3 with explanation", "Key concept 4 with explanation", "Key concept 5 with explanation"],
+    "detailedExplanation": "In-depth 5-8 paragraph explanation of the core concepts. Include formulas, definitions, historical context, and real-world applications. This should be the main educational content - thorough and informative like a textbook chapter.",
     "examples": [
       { "title": "Example 1 title", "content": "Detailed worked example with step-by-step explanation" },
-      { "title": "Example 2 title", "content": "Another practical example showing application" }
+      { "title": "Example 2 title", "content": "Another practical example showing application" },
+      { "title": "Example 3 title", "content": "Real-world case study or application" }
     ]
   },
   "estimatedMinutes": 45,
-  "simulationType": "matter|three|d3|p5",
-  "simulationCode": "// Code for the chosen library - must be WORKING, INTERACTIVE visualization",
   "quizzes": [
     { "question": "Thoughtful question testing understanding", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": "Option A (MUST be EXACT full text)", "explanation": "Detailed explanation of why this is correct and why others are wrong" },
     { "question": "Second question on different aspect", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": "Option B (MUST be EXACT full text)", "explanation": "Educational explanation" },
@@ -135,56 +125,11 @@ Output Format: Valid JSON only, no markdown code blocks.
   "resources": []
 }
 
-Library-specific code patterns:
-
-MATTER.JS (simulationType: "matter"):
-- You receive: Matter, engine, render, width, height
-- Create bodies with: Matter.Bodies.circle(x, y, radius, options)
-- Add to world: Matter.Composite.add(engine.world, [bodies])
-- Add mouse control: Matter.MouseConstraint.create(engine, {...})
-
-THREE.JS (simulationType: "three"):
-- You receive: THREE, scene, camera, renderer, width, height
-- Create meshes: new THREE.Mesh(geometry, material)
-- Add to scene: scene.add(mesh)
-- Define: function animate() { /* update objects */ }
-
-D3.JS (simulationType: "d3"):
-- You receive: d3, svg, width, height
-- Create elements: svg.append("circle").attr("cx", x)
-- Use transitions: selection.transition().duration(1000)
-
-P5.JS (simulationType: "p5"):
-- Use 'p' as instance: p.setup, p.draw, p.createCanvas
-- Canvas: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)
-
 Rules:
-1. Create 1-2 quizzes that test understanding
-2. Include 2-3 REAL educational resources with working URLs
-3. Choose the most appropriate library for accurate visualization
-4. Make simulations interactive and scientifically accurate`;
-
-const SIMULATION_PROMPT = `You are an expert p5.js Creative Coder and Science Educator.
-Generate an interactive educational simulation.
-
-Output Format: Valid JSON only, no markdown code blocks.
-{
-  "sketch": "// p5.js instance mode code here",
-  "questions": [
-    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "A" },
-    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "B" },
-    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "C" }
-  ]
-}
-
-Sketch Rules:
-1. Use 'p' as the p5 instance variable (Instance Mode).
-2. Do NOT use global variables. Use closure variables within the sketch.
-3. Make it INTERACTIVE - respond to mouse movement, clicks, or have automated motion.
-4. Keep it visual, beautiful, and educational.
-5. Canvas size: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)
-6. Include visual labels or annotations where helpful.
-7. Use vibrant colors that work on dark backgrounds.`;
+1. Create 2-3 quizzes that test understanding
+2. Include REAL educational resources with working URLs when possible
+3. Content should be comprehensive like a university textbook
+4. Include practical examples and real-world applications`;
 
 export async function registerRoutes(
   httpServer: Server,
@@ -314,7 +259,6 @@ Return ONLY valid JSON, no markdown.`
             description: moduleData.description || "",
             order: moduleData.order || 1,
             content: moduleData.content || {},
-            simulationCode: moduleData.simulationCode || null,
             estimatedMinutes: moduleData.estimatedMinutes || 30,
           });
           
@@ -454,7 +398,6 @@ Return ONLY valid JSON, no markdown.`
           description: mod.description || "",
           order: mod.order || 1,
           content: { loading: true },
-          simulationCode: null,
           estimatedMinutes: 30,
         });
         moduleRecords.push(moduleRecord);
@@ -509,8 +452,6 @@ Return ONLY valid JSON.`
           // Update module with full content (set loading: false to indicate completion)
           await storage.updateModule(moduleRecord.id, {
             content: { ...(content.content || {}), loading: false },
-            simulationType: content.simulationType || "p5",
-            simulationCode: content.simulationCode || null,
             estimatedMinutes: content.estimatedMinutes || 30,
           });
 
@@ -677,7 +618,8 @@ Return ONLY valid JSON.`
   app.get("/api/progress/:courseId", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as any;
-      const progress = await storage.getProgress(user.claims.sub, req.params.courseId);
+      const courseId = req.params.courseId as string;
+      const progress = await storage.getProgress(user.claims.sub, courseId);
       res.json(progress);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch progress" });
@@ -745,129 +687,118 @@ Return ONLY valid JSON.`
     }
   });
 
-  // Original simulation endpoints
-  app.post("/api/generate-stream", async (req, res) => {
-    const { concept } = req.body;
-    
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-    
-    const sendEvent = (type: string, data: any) => {
-      res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
-    };
-    
-    if (!concept) {
-      sendEvent('error', { message: 'Concept is required' });
-      res.end();
-      return;
-    }
-    
-    if (!GEMINI_API_KEY) {
-      sendEvent('error', { message: 'AI service not configured' });
-      res.end();
-      return;
-    }
-    
+  // Source endpoints (NotebookLM style)
+  app.get("/api/sources/:notebookId", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      sendEvent('progress', { step: 1, total: 4, message: 'Connecting to AI...' });
-      
-      const model = getGeminiModel();
-      
-      sendEvent('progress', { step: 2, total: 4, message: `Generating ${concept} simulation...` });
-      
-      const result = await model.generateContent([
-        SIMULATION_PROMPT,
-        `Create an interactive p5.js simulation for: "${concept}". Return ONLY valid JSON.`
-      ]);
-
-      sendEvent('progress', { step: 3, total: 4, message: 'Processing response...' });
-      
-      const content = result.response.text();
-      if (!content) {
-        sendEvent('error', { message: 'No content generated' });
-        res.end();
-        return;
-      }
-      
-      let jsonStr = content
-        .replace(/```json\s*/gi, '')
-        .replace(/```\s*/g, '')
-        .trim();
-      
-      sendEvent('progress', { step: 4, total: 4, message: 'Building simulation...' });
-      
-      try {
-        const parsed = JSON.parse(jsonStr);
-        
-        if (!parsed.sketch || !Array.isArray(parsed.questions)) {
-          sendEvent('error', { message: 'Invalid response structure' });
-          res.end();
-          return;
-        }
-        
-        sendEvent('complete', { data: parsed });
-        res.end();
-        
-      } catch (parseError) {
-        console.error("JSON Parse Error:", parseError);
-        sendEvent('error', { message: 'Failed to parse response' });
-        res.end();
-      }
-      
-    } catch (error: any) {
-      console.error("Generation error:", error);
-      sendEvent('error', { message: error.message || 'Generation failed' });
-      res.end();
+      const sources = await storage.getSourcesByNotebook(req.params.notebookId as string);
+      res.json(sources);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch sources" });
     }
   });
 
-  app.post("/api/generate", async (req, res) => {
+  app.post("/api/sources", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { concept } = req.body;
+      const user = req.user as any;
+      const { notebookId, type, title, content, url } = req.body;
       
-      if (!concept || typeof concept !== "string") {
-        return res.status(400).json({ error: "Concept is required" });
-      }
+      const source = await storage.createSource({
+        userId: user.claims.sub,
+        notebookId,
+        type,
+        title,
+        content,
+        url,
+        processed: true,
+      });
+      
+      res.json(source);
+    } catch (error) {
+      console.error("Create source error:", error);
+      res.status(500).json({ error: "Failed to create source" });
+    }
+  });
+
+  app.delete("/api/sources/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteSource(req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete source" });
+    }
+  });
+
+  // Chat endpoints
+  app.get("/api/chat/:notebookId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getChatMessages(req.params.notebookId as string);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chat messages" });
+    }
+  });
+
+  app.post("/api/chat", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { notebookId, message } = req.body;
+      
+      // Save user message
+      await storage.createChatMessage({
+        userId: user.claims.sub,
+        notebookId,
+        role: "user",
+        content: message,
+      });
+      
+      // Get sources for context
+      const sources = await storage.getSourcesByNotebook(notebookId);
+      const sourceContext = sources
+        .filter(s => s.content)
+        .map(s => `Source: ${s.title}\n${s.content}`)
+        .join("\n\n---\n\n");
       
       if (!GEMINI_API_KEY) {
         return res.status(500).json({ error: "AI service not configured" });
       }
       
-      const model = getGeminiModel();
+      const model = getGeminiModel(true);
+      
+      const systemPrompt = sourceContext 
+        ? `You are a helpful AI assistant. Answer the user's question based on the following sources. Cite specific sources when relevant. If the answer isn't in the sources, say so but still try to help.
 
-      const result = await model.generateContent([
-        SIMULATION_PROMPT,
-        `Create an interactive p5.js simulation for: "${concept}". Return ONLY valid JSON.`
-      ]);
+SOURCES:
+${sourceContext}
 
-      const content = result.response.text();
-      if (!content) {
-        return res.status(500).json({ error: "No content generated" });
-      }
+USER QUESTION: ${message}`
+        : `You are a helpful AI assistant. The user hasn't added any sources yet. Encourage them to add documents, URLs, or text to get more personalized answers. Still try to answer their question helpfully.
+
+USER QUESTION: ${message}`;
       
-      let jsonStr = content
-        .replace(/```json\s*/gi, '')
-        .replace(/```\s*/g, '')
-        .trim();
+      const result = await model.generateContent([systemPrompt]);
+      const aiResponse = result.response.text() || "I couldn't generate a response.";
       
-      try {
-        const parsed = JSON.parse(jsonStr);
-        
-        if (!parsed.sketch || !Array.isArray(parsed.questions)) {
-          return res.status(500).json({ error: "Invalid response structure" });
-        }
-        
-        return res.json(parsed);
-      } catch (parseError) {
-        console.error("JSON Parse Error:", parseError);
-        return res.status(500).json({ error: "Failed to parse response" });
-      }
+      // Save AI response
+      const aiMessage = await storage.createChatMessage({
+        userId: user.claims.sub,
+        notebookId,
+        role: "assistant",
+        content: aiResponse,
+      });
       
+      res.json(aiMessage);
     } catch (error: any) {
-      console.error("Generation error:", error);
-      return res.status(500).json({ error: error.message || "Generation failed" });
+      console.error("Chat error:", error);
+      res.status(500).json({ error: error.message || "Failed to process chat" });
+    }
+  });
+
+  app.delete("/api/chat/:notebookId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.clearChatHistory(req.params.notebookId as string);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clear chat history" });
     }
   });
 

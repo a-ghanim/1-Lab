@@ -9,6 +9,8 @@ import {
   uploads, 
   streaks,
   studySessions,
+  sources,
+  chatMessages,
   type User,
   type LearnerProfile,
   type InsertLearnerProfile,
@@ -26,6 +28,10 @@ import {
   type InsertUpload,
   type StudySession,
   type InsertStudySession,
+  type Source,
+  type InsertSource,
+  type ChatMessage,
+  type InsertChatMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sum, count, sql, isNotNull } from "drizzle-orm";
@@ -79,6 +85,18 @@ export interface IStorage {
   createStudySession(session: InsertStudySession): Promise<StudySession>;
   endStudySession(sessionId: string, durationMinutes: number): Promise<StudySession>;
   getActiveStudySession(userId: string): Promise<StudySession | undefined>;
+  
+  // Sources (NotebookLM style)
+  getSourcesByNotebook(notebookId: string): Promise<Source[]>;
+  getSourcesByUser(userId: string): Promise<Source[]>;
+  createSource(source: InsertSource): Promise<Source>;
+  updateSource(id: string, data: Partial<InsertSource>): Promise<Source>;
+  deleteSource(id: string): Promise<void>;
+  
+  // Chat messages
+  getChatMessages(notebookId: string): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  clearChatHistory(notebookId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -326,6 +344,59 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(studySessions.startedAt))
       .limit(1);
     return session;
+  }
+
+  // Sources (NotebookLM style)
+  async getSourcesByNotebook(notebookId: string): Promise<Source[]> {
+    return db
+      .select()
+      .from(sources)
+      .where(eq(sources.notebookId, notebookId))
+      .orderBy(desc(sources.createdAt));
+  }
+
+  async getSourcesByUser(userId: string): Promise<Source[]> {
+    return db
+      .select()
+      .from(sources)
+      .where(eq(sources.userId, userId))
+      .orderBy(desc(sources.createdAt));
+  }
+
+  async createSource(source: InsertSource): Promise<Source> {
+    const [result] = await db.insert(sources).values(source).returning();
+    return result;
+  }
+
+  async updateSource(id: string, data: Partial<InsertSource>): Promise<Source> {
+    const [result] = await db
+      .update(sources)
+      .set(data)
+      .where(eq(sources.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteSource(id: string): Promise<void> {
+    await db.delete(sources).where(eq(sources.id, id));
+  }
+
+  // Chat messages
+  async getChatMessages(notebookId: string): Promise<ChatMessage[]> {
+    return db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.notebookId, notebookId))
+      .orderBy(chatMessages.createdAt);
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [result] = await db.insert(chatMessages).values(message).returning();
+    return result;
+  }
+
+  async clearChatHistory(notebookId: string): Promise<void> {
+    await db.delete(chatMessages).where(eq(chatMessages.notebookId, notebookId));
   }
 }
 

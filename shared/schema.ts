@@ -46,9 +46,35 @@ export const modules = pgTable("modules", {
   description: text("description"),
   order: integer("order").notNull(),
   content: jsonb("content"),
-  simulationType: varchar("simulation_type").default("p5"),
-  simulationCode: text("simulation_code"),
   estimatedMinutes: integer("estimated_minutes").default(30),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Sources (documents, URLs, text) - NotebookLM style
+export const sources = pgTable("sources", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  notebookId: varchar("notebook_id").references(() => courses.id),
+  type: varchar("type").notNull(), // 'pdf', 'url', 'text', 'youtube'
+  title: varchar("title").notNull(),
+  content: text("content"), // extracted text content
+  url: text("url"),
+  filename: varchar("filename"),
+  mimeType: varchar("mime_type"),
+  size: integer("size"),
+  metadata: jsonb("metadata"), // additional metadata
+  processed: boolean("processed").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Chat messages for AI conversations
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  notebookId: varchar("notebook_id").references(() => courses.id),
+  role: varchar("role").notNull(), // 'user' or 'assistant'
+  content: text("content").notNull(),
+  citations: jsonb("citations"), // references to source content
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -174,6 +200,8 @@ export const insertQuizSchema = createInsertSchema(quizzes).omit({ id: true, cre
 export const insertResourceSchema = createInsertSchema(resources).omit({ id: true, createdAt: true });
 export const insertUploadSchema = createInsertSchema(uploads).omit({ id: true, createdAt: true });
 export const insertStudySessionSchema = createInsertSchema(studySessions).omit({ id: true, createdAt: true });
+export const insertSourceSchema = createInsertSchema(sources).omit({ id: true, createdAt: true });
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
 
 // Types
 export type LearnerProfile = typeof learnerProfiles.$inferSelect;
@@ -192,3 +220,7 @@ export type Upload = typeof uploads.$inferSelect;
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type StudySession = typeof studySessions.$inferSelect;
 export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
+export type Source = typeof sources.$inferSelect;
+export type InsertSource = z.infer<typeof insertSourceSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;

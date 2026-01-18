@@ -3,7 +3,6 @@ import { useRoute, useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
-import { UnifiedSimulation } from "@/components/UnifiedSimulation";
 import { FocusTimer } from "@/components/FocusTimer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -121,7 +120,7 @@ export default function CourseView() {
       return res.json();
     },
     onSuccess: (_, { moduleId }) => {
-      setCompletedModules(prev => new Set([...prev, moduleId]));
+      setCompletedModules(prev => new Set(Array.from(prev).concat(moduleId)));
       queryClient.invalidateQueries({ queryKey: ["/api/progress", courseId] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/streak"] });
@@ -501,16 +500,6 @@ export default function CourseView() {
                             </div>
                           </ContentCard>
                         )}
-
-                        {/* Interactive Simulation Card */}
-                        <ContentCard title="Interactive Visualization" icon={Play} accentColor="purple">
-                          <UnifiedSimulation
-                            topic={`${course?.title || ''} ${currentModule.title} ${currentModule.description || ''}`}
-                            type={(currentModule as any).simulationType || "auto"}
-                            code={currentModule.simulationCode}
-                            title={currentModule.title}
-                          />
-                        </ContentCard>
 
                         {/* Knowledge Check Card */}
                         {quizzes.length > 0 && (
