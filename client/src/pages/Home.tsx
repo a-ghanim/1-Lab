@@ -177,17 +177,17 @@ export default function Home() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">OpenAI API Key</Label>
+                  <Label className="text-sm font-medium">Gemini API Key</Label>
                   <Input 
                     type="password" 
-                    placeholder="sk-..." 
+                    placeholder="AIza..." 
                     value={apiKey} 
                     onChange={(e) => setApiKey(e.target.value)}
                     className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary"
                   />
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     Without a key, the lab runs in <span className="text-primary">Demo Mode</span> with curated simulations. 
-                    Add your key to generate any concept imaginable.
+                    Add your <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Gemini API key</a> to generate any concept.
                   </p>
                 </div>
               </div>
@@ -208,7 +208,7 @@ export default function Home() {
             >
               <span className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full text-sm text-muted-foreground mb-6">
                 <Zap className="w-4 h-4 text-primary" />
-                Powered by AI + p5.js
+                Powered by Gemini + p5.js
               </span>
             </motion.div>
             

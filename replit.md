@@ -51,7 +51,7 @@ One Breath Lab is an Awwwards-worthy interactive educational platform that trans
 - Tailwind CSS v4
 - Framer Motion for animations
 - p5.js via CDN for simulations
-- OpenAI SDK for AI generation
+- Google Gemini API for AI generation
 
 ## User Preferences
 - Dark mode by default

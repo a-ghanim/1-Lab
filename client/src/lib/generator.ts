@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { BLACK_HOLE_SKETCH, PHOTOSYNTHESIS_SKETCH, PENDULUM_SKETCH, GENERIC_SKETCH } from './p5-examples';
 
 export interface GeneratedContent {
@@ -6,37 +6,37 @@ export interface GeneratedContent {
   questions: {
     question: string;
     options: string[];
-    answer: string; // The correct option
+    answer: string;
   }[];
 }
 
-const SYSTEM_PROMPT = `
-You are an expert p5.js Creative Coder and Science Educator.
+const SYSTEM_PROMPT = `You are an expert p5.js Creative Coder and Science Educator.
 Your goal is to generate interactive educational simulations.
 
-Output Format: JSON only.
+Output Format: Valid JSON only, no markdown code blocks.
 {
   "sketch": "p.setup = function() { ... }; p.draw = function() { ... };",
   "questions": [
     { "question": "...", "options": ["A", "B", "C", "D"], "answer": "A" },
-    ... 3 questions ...
+    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "B" },
+    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "C" }
   ]
 }
 
 Sketch Rules:
 1. Use 'p' as the p5 instance variable (Instance Mode).
-2. Do NOT use global variables. Attach variables to 'p' if needed, or use closure variables within the wrapper I will add.
-3. Make it INTERACTIVE (mouse, automated movement, or visual feedback).
-4. Keep it visual and beautiful.
-5. Canvas size should be responsive or fixed 600x400.
-6. Handle window resize if possible.
-`;
+2. Do NOT use global variables. Use closure variables within the sketch.
+3. Make it INTERACTIVE - respond to mouse movement, clicks, or have automated motion.
+4. Keep it visual, beautiful, and educational.
+5. Canvas size: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)
+6. Include visual labels or annotations where helpful.
+7. Use vibrant colors that work on dark backgrounds.`;
 
 export async function generateSimulation(concept: string, apiKey: string | null): Promise<GeneratedContent> {
-  // 1. Check for Hardcoded Examples first (fast & reliable for demo)
   const lowerConcept = concept.toLowerCase();
   
-  if (lowerConcept.includes('black hole') || lowerConcept.includes('gravity')) {
+  // Check for hardcoded examples first (fast & reliable)
+  if (lowerConcept.includes('black hole') || lowerConcept.includes('gravity well')) {
     return {
       sketch: BLACK_HOLE_SKETCH,
       questions: [
@@ -82,7 +82,7 @@ export async function generateSimulation(concept: string, apiKey: string | null)
     };
   }
 
-  if (lowerConcept.includes('pendulum') || lowerConcept.includes('harmonic')) {
+  if (lowerConcept.includes('pendulum') || lowerConcept.includes('harmonic') || lowerConcept.includes('oscillat')) {
     return {
       sketch: PENDULUM_SKETCH,
       questions: [
@@ -105,36 +105,35 @@ export async function generateSimulation(concept: string, apiKey: string | null)
     };
   }
 
-  // 2. If valid API Key provided, use Real AI
+  // Use Gemini if API key is provided
   if (apiKey) {
     try {
-      const openai = new OpenAI({
-        apiKey: apiKey,
-        dangerouslyAllowBrowser: true // Client-side demo only
-      });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      const completion = await openai.chat.completions.create({
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Create a simulation for: ${concept}` }
-        ],
-        model: "gpt-3.5-turbo",
-      });
+      const result = await model.generateContent([
+        SYSTEM_PROMPT,
+        `Create an interactive p5.js simulation for: ${concept}`
+      ]);
 
-      const content = completion.choices[0].message.content;
+      const content = result.response.text();
       if (!content) throw new Error("No content generated");
       
       // Parse JSON from potential markdown blocks
-      const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+      const jsonStr = content
+        .replace(/```json/gi, '')
+        .replace(/```/g, '')
+        .trim();
+      
       return JSON.parse(jsonStr);
       
     } catch (err) {
-      console.error("AI Generation Failed:", err);
-      // Fallback to generic if AI fails
+      console.error("Gemini Generation Failed:", err);
+      // Fall through to generic
     }
   }
 
-  // 3. Fallback Generic
+  // Fallback to generic simulation
   return {
     sketch: GENERIC_SKETCH,
     questions: [
@@ -145,7 +144,7 @@ export async function generateSimulation(concept: string, apiKey: string | null)
       },
       {
         question: "How can you get a specific simulation for '" + concept + "'?",
-        options: ["Try 'Black Hole'", "Try 'Photosynthesis'", "Add an OpenAI Key in settings", "All of the above"],
+        options: ["Try 'Black Hole'", "Try 'Photosynthesis'", "Add a Gemini API Key in settings", "All of the above"],
         answer: "All of the above"
       },
       {
