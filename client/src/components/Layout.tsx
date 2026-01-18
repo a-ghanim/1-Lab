@@ -1,11 +1,14 @@
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
 import { 
   Settings, 
   LogOut, 
   ChevronDown,
   Flame,
-  User
+  User,
+  Sun,
+  Moon
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,6 +25,7 @@ interface LayoutProps {
 
 export function Layout({ children, showNav = true }: LayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="min-h-screen bg-background text-foreground dot-grid">
@@ -37,11 +41,18 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                 <span className="font-medium hidden sm:block">One Breath Lab</span>
               </Link>
 
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 text-sm text-muted-foreground">
-                  <Flame className="w-4 h-4" />
-                  <span className="font-medium">0</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 hover:bg-muted transition-colors"
+                  data-testid="button-theme-toggle"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="w-4 h-4" strokeWidth={1.5} />
+                  ) : (
+                    <Moon className="w-4 h-4" strokeWidth={1.5} />
+                  )}
+                </button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
