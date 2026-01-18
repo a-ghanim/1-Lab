@@ -243,9 +243,9 @@ export default function Landing() {
           </div>
         </div>
         
-        <div className="relative -mb-[0.15em]">
+        <div className="relative -mb-[0.1em] w-full">
           <div 
-            className="text-[18vw] md:text-[15vw] font-medium leading-none tracking-tighter text-background/[0.08] select-none whitespace-nowrap overflow-hidden"
+            className="text-[22vw] md:text-[18vw] font-medium leading-none tracking-[-0.04em] text-background/[0.08] select-none text-center"
             style={{ fontFamily: "Inter, system-ui, sans-serif" }}
           >
             one breath lab
