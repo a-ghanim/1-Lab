@@ -1,14 +1,37 @@
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowRight, BookOpen, Brain, MessageSquare, Target, Zap, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NoiseOverlay } from "@/components/NoiseOverlay";
 import { BentoCard } from "@/components/BentoCard";
 import heroBg from "@/assets/hero-bg.jpg";
+import { useEffect } from "react";
 
 export default function Landing() {
   const handleLogin = () => {
     window.location.href = "/api/login";
   };
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const springConfig = { damping: 25, stiffness: 150 };
+  const x = useSpring(mouseX, springConfig);
+  const y = useSpring(mouseY, springConfig);
+
+  const bgX = useTransform(x, [0, 1], [15, -15]);
+  const bgY = useTransform(y, [0, 1], [10, -10]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const { innerWidth, innerHeight } = window;
+      mouseX.set(clientX / innerWidth);
+      mouseY.set(clientY / innerHeight);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
@@ -30,14 +53,17 @@ export default function Landing() {
       </header>
 
       {/* Full-width Hero */}
-      <div 
-        className="relative min-h-[85vh] md:min-h-[90vh] flex items-end"
-        style={{
-          backgroundImage: `url(${heroBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
+      <div className="relative min-h-[85vh] md:min-h-[90vh] flex items-end overflow-hidden">
+        <motion.div 
+          className="absolute inset-[-30px]"
+          style={{
+            backgroundImage: `url(${heroBg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            x: bgX,
+            y: bgY,
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 pb-16 md:pb-24">
           <motion.div
