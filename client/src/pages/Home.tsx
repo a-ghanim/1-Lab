@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { SimulationRunner } from "@/components/SimulationRunner";
 import { ParticleField } from "@/components/ParticleField";
-import { generateSimulation, GeneratedContent } from "@/lib/generator";
+import { generateSimulation, GeneratedContent, StreamProgress } from "@/lib/generator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -47,6 +47,7 @@ export default function Home() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
   const [isCopied, setIsCopied] = useState(false);
+  const [progress, setProgress] = useState<StreamProgress | null>(null);
   const { toast } = useToast();
   
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,24 +86,28 @@ export default function Home() {
     setResult(null);
     setSelectedAnswers({});
     setShowFeedback({});
+    setProgress(null);
     
     try {
-      const data = await generateSimulation(term, apiKey || null);
+      const data = await generateSimulation(term, apiKey || null, (prog) => {
+        setProgress(prog);
+      });
       setResult(data);
       
       // Update URL
       const url = new URL(window.location.href);
       url.searchParams.set("concept", term);
       window.history.replaceState({}, '', url.toString());
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       toast({
         title: "Error",
-        description: "Failed to generate simulation. Please try again.",
+        description: e.message || "Failed to generate simulation. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
+      setProgress(null);
     }
   };
 
@@ -335,7 +340,7 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-3xl aspect-[3/2] glass rounded-3xl flex flex-col items-center justify-center gap-6"
+                className="w-full max-w-3xl glass rounded-3xl flex flex-col items-center justify-center gap-6 p-12"
               >
                 <div className="relative">
                   <motion.div 
@@ -347,12 +352,60 @@ export default function Home() {
                     <Atom className="w-8 h-8 text-primary animate-pulse" />
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-lg font-medium text-foreground">Generating simulation...</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                
+                <div className="text-center space-y-3">
+                  <p className="text-lg font-medium text-foreground">
+                    {progress ? progress.message : 'Initializing...'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
                     Creating your interactive <span className="text-primary">{concept}</span> experiment
                   </p>
                 </div>
+                
+                {/* Progress Steps */}
+                {progress && (
+                  <div className="w-full max-w-md space-y-4 mt-4">
+                    {/* Progress bar */}
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(progress.step / progress.total) * 100}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </div>
+                    
+                    {/* Step indicators */}
+                    <div className="flex justify-between px-1">
+                      {[1, 2, 3, 4].map((step) => (
+                        <div key={step} className="flex flex-col items-center gap-2">
+                          <motion.div 
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all
+                              ${step <= progress.step 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-white/10 text-muted-foreground'
+                              }
+                            `}
+                            animate={step === progress.step ? { scale: [1, 1.1, 1] } : {}}
+                            transition={{ duration: 0.5, repeat: step === progress.step ? Infinity : 0 }}
+                          >
+                            {step < progress.step ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              step
+                            )}
+                          </motion.div>
+                          <span className={`text-[10px] hidden sm:block ${step <= progress.step ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {step === 1 && 'Connect'}
+                            {step === 2 && 'Generate'}
+                            {step === 3 && 'Process'}
+                            {step === 4 && 'Build'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 

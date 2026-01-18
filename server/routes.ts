@@ -31,6 +31,105 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Streaming POST endpoint - API key sent securely in body
+  app.post("/api/generate-stream", async (req, res) => {
+    const { concept, apiKey } = req.body;
+    
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+    
+    const sendEvent = (type: string, data: any) => {
+      res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
+    };
+    
+    if (!concept) {
+      sendEvent('error', { message: 'Concept is required' });
+      res.end();
+      return;
+    }
+    
+    if (!apiKey) {
+      sendEvent('error', { message: 'API key is required for custom generation' });
+      res.end();
+      return;
+    }
+    
+    try {
+      // Step 1: Connecting to AI
+      sendEvent('progress', { step: 1, total: 4, message: 'Connecting to Gemini AI...' });
+      
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      
+      // Step 2: Generating simulation
+      sendEvent('progress', { step: 2, total: 4, message: `Generating ${concept} simulation...` });
+      
+      const result = await model.generateContent([
+        SYSTEM_PROMPT,
+        `Create an interactive p5.js simulation for the concept: "${concept}". 
+        
+The simulation should visually demonstrate the key principles of ${concept}.
+Include mouse interactivity or animation to make it engaging.
+Generate 3 educational multiple-choice questions about ${concept}.
+
+Return ONLY valid JSON, no markdown.`
+      ]);
+
+      // Step 3: Processing response
+      sendEvent('progress', { step: 3, total: 4, message: 'Processing AI response...' });
+      
+      const content = result.response.text();
+      if (!content) {
+        sendEvent('error', { message: 'No content generated from AI' });
+        res.end();
+        return;
+      }
+      
+      // Clean up the response
+      let jsonStr = content
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      
+      // Step 4: Finalizing
+      sendEvent('progress', { step: 4, total: 4, message: 'Building interactive simulation...' });
+      
+      try {
+        const parsed = JSON.parse(jsonStr);
+        
+        if (!parsed.sketch || !Array.isArray(parsed.questions)) {
+          sendEvent('error', { message: 'Invalid response structure from AI' });
+          res.end();
+          return;
+        }
+        
+        // Success!
+        sendEvent('complete', { data: parsed });
+        res.end();
+        
+      } catch (parseError) {
+        console.error("JSON Parse Error:", parseError);
+        console.error("Raw content:", content);
+        sendEvent('error', { message: 'Failed to parse AI response' });
+        res.end();
+      }
+      
+    } catch (error: any) {
+      console.error("Generation error:", error);
+      
+      if (error.message?.includes("API_KEY_INVALID")) {
+        sendEvent('error', { message: 'Invalid Gemini API key' });
+      } else {
+        sendEvent('error', { message: error.message || 'Failed to generate simulation' });
+      }
+      res.end();
+    }
+  });
+
+  // Keep the original POST endpoint for backward compatibility
   app.post("/api/generate", async (req, res) => {
     try {
       const { concept, apiKey } = req.body;
@@ -62,17 +161,14 @@ Return ONLY valid JSON, no markdown.`
         return res.status(500).json({ error: "No content generated from AI" });
       }
       
-      // Clean up the response - remove markdown code blocks if present
       let jsonStr = content
         .replace(/```json\s*/gi, '')
         .replace(/```\s*/g, '')
         .trim();
       
-      // Try to parse the JSON
       try {
         const parsed = JSON.parse(jsonStr);
         
-        // Validate the response structure
         if (!parsed.sketch || !Array.isArray(parsed.questions)) {
           return res.status(500).json({ error: "Invalid response structure from AI" });
         }
@@ -87,7 +183,6 @@ Return ONLY valid JSON, no markdown.`
     } catch (error: any) {
       console.error("Generation error:", error);
       
-      // Handle specific Gemini API errors
       if (error.message?.includes("API_KEY_INVALID")) {
         return res.status(401).json({ error: "Invalid Gemini API key" });
       }

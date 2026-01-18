@@ -9,7 +9,17 @@ export interface GeneratedContent {
   }[];
 }
 
-export async function generateSimulation(concept: string, apiKey: string | null): Promise<GeneratedContent> {
+export interface StreamProgress {
+  step: number;
+  total: number;
+  message: string;
+}
+
+export async function generateSimulation(
+  concept: string, 
+  apiKey: string | null,
+  onProgress?: (progress: StreamProgress) => void
+): Promise<GeneratedContent> {
   const lowerConcept = concept.toLowerCase();
   
   // Check for hardcoded examples first (fast & reliable)
@@ -82,7 +92,71 @@ export async function generateSimulation(concept: string, apiKey: string | null)
     };
   }
 
-  // Use server-side Gemini API if key is provided
+  // Use streaming POST endpoint if key is provided
+  if (apiKey && onProgress) {
+    return new Promise((resolve, reject) => {
+      // Use fetch with streaming for secure POST (API key in body, not URL)
+      fetch('/api/generate-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ concept, apiKey }),
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error('Failed to connect to generation service');
+        }
+        
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No response stream available');
+        }
+        
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Parse SSE messages from buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'progress') {
+                  onProgress({
+                    step: data.step,
+                    total: data.total,
+                    message: data.message
+                  });
+                } else if (data.type === 'complete') {
+                  resolve(data.data);
+                  return;
+                } else if (data.type === 'error') {
+                  reject(new Error(data.message));
+                  return;
+                }
+              } catch (err) {
+                console.error('Error parsing SSE data:', err);
+              }
+            }
+          }
+        }
+        
+        reject(new Error('Stream ended without completion'));
+      }).catch(reject);
+    });
+  }
+  
+  // Use server-side Gemini API if key is provided (fallback without streaming)
   if (apiKey) {
     try {
       const response = await fetch('/api/generate', {
