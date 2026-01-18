@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { BLACK_HOLE_SKETCH, PHOTOSYNTHESIS_SKETCH, PENDULUM_SKETCH, GENERIC_SKETCH } from './p5-examples';
 
 export interface GeneratedContent {
@@ -9,28 +8,6 @@ export interface GeneratedContent {
     answer: string;
   }[];
 }
-
-const SYSTEM_PROMPT = `You are an expert p5.js Creative Coder and Science Educator.
-Your goal is to generate interactive educational simulations.
-
-Output Format: Valid JSON only, no markdown code blocks.
-{
-  "sketch": "p.setup = function() { ... }; p.draw = function() { ... };",
-  "questions": [
-    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "A" },
-    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "B" },
-    { "question": "...", "options": ["A", "B", "C", "D"], "answer": "C" }
-  ]
-}
-
-Sketch Rules:
-1. Use 'p' as the p5 instance variable (Instance Mode).
-2. Do NOT use global variables. Use closure variables within the sketch.
-3. Make it INTERACTIVE - respond to mouse movement, clicks, or have automated motion.
-4. Keep it visual, beautiful, and educational.
-5. Canvas size: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)
-6. Include visual labels or annotations where helpful.
-7. Use vibrant colors that work on dark backgrounds.`;
 
 export async function generateSimulation(concept: string, apiKey: string | null): Promise<GeneratedContent> {
   const lowerConcept = concept.toLowerCase();
@@ -105,31 +82,27 @@ export async function generateSimulation(concept: string, apiKey: string | null)
     };
   }
 
-  // Use Gemini if API key is provided
+  // Use server-side Gemini API if key is provided
   if (apiKey) {
     try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      const result = await model.generateContent([
-        SYSTEM_PROMPT,
-        `Create an interactive p5.js simulation for: ${concept}`
-      ]);
-
-      const content = result.response.text();
-      if (!content) throw new Error("No content generated");
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ concept, apiKey }),
+      });
       
-      // Parse JSON from potential markdown blocks
-      const jsonStr = content
-        .replace(/```json/gi, '')
-        .replace(/```/g, '')
-        .trim();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Generation failed');
+      }
       
-      return JSON.parse(jsonStr);
+      return await response.json();
       
     } catch (err) {
-      console.error("Gemini Generation Failed:", err);
-      // Fall through to generic
+      console.error("Generation Failed:", err);
+      throw err;
     }
   }
 
