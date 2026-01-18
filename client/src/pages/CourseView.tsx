@@ -66,7 +66,10 @@ export default function CourseView() {
 
   const isModuleLoading = useCallback((module: Module) => {
     const content = module.content as any;
-    return content?.loading === true || (!module.simulationCode && !content?.overview);
+    // Check explicit loading flag - if loading is explicitly false, module is complete
+    if (content?.loading === false) return false;
+    // If loading is true or undefined with no content, module is still loading
+    return content?.loading === true || (!content?.overview);
   }, []);
 
   useEffect(() => {

@@ -408,9 +408,9 @@ Return ONLY valid JSON.`
             content = { content: { overview: "Content generation failed" }, simulationCode: null, quizzes: [], resources: [] };
           }
 
-          // Update module with full content
+          // Update module with full content (set loading: false to indicate completion)
           await storage.updateModule(moduleRecord.id, {
-            content: content.content || {},
+            content: { ...(content.content || {}), loading: false },
             simulationCode: content.simulationCode || null,
             estimatedMinutes: content.estimatedMinutes || 30,
           });
