@@ -169,24 +169,14 @@ export default function Landing() {
                 className="md:col-span-2"
                 delay={0.3}
               >
-                <div className="flex flex-col md:flex-row md:items-center gap-6">
-                  <div className="flex-1">
-                    <div className="p-2.5 bg-violet-500/10 w-fit mb-5">
-                      <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
-                    </div>
-                    <h3 className="text-lg font-medium mb-2">AI-generated courses</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Enter any topic. Get a structured curriculum with modules, key concepts, examples, and knowledge checks—in seconds.
-                    </p>
+                <div>
+                  <div className="p-2.5 bg-violet-500/10 w-fit mb-5">
+                    <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="flex -space-x-2">
-                      {[1,2,3].map((i) => (
-                        <div key={i} className="w-8 h-8 rounded-full bg-muted border-2 border-background" />
-                      ))}
-                    </div>
-                    <span>2,400+ courses created</span>
-                  </div>
+                  <h3 className="text-lg font-medium mb-2">AI-generated courses</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Enter any topic. Get a structured curriculum with modules, key concepts, examples, and knowledge checks—in seconds.
+                  </p>
                 </div>
               </BentoCard>
             </div>
