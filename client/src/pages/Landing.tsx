@@ -212,34 +212,14 @@ export default function Landing() {
 
       <footer className="relative z-10 border-t border-border bg-foreground text-background overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 py-12">
-          <div className="flex flex-col md:flex-row justify-between gap-8 mb-16">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-4 h-4 bg-background" />
-                <span className="text-sm font-medium">One Breath Lab</span>
-              </div>
-              <p className="text-sm text-background/60 max-w-xs">
-                Building understanding, one breath at a time.
-              </p>
+          <div className="mb-16">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-4 h-4 bg-background" />
+              <span className="text-sm font-medium">One Breath Lab</span>
             </div>
-            <div className="flex gap-12 text-sm">
-              <div>
-                <div className="text-background/40 mb-3">Product</div>
-                <div className="space-y-2 text-background/70">
-                  <div>Features</div>
-                  <div>Pricing</div>
-                  <div>Changelog</div>
-                </div>
-              </div>
-              <div>
-                <div className="text-background/40 mb-3">Company</div>
-                <div className="space-y-2 text-background/70">
-                  <div>About</div>
-                  <div>Blog</div>
-                  <div>Contact</div>
-                </div>
-              </div>
-            </div>
+            <p className="text-sm text-background/60 max-w-xs">
+              Building understanding, one breath at a time.
+            </p>
           </div>
         </div>
         
