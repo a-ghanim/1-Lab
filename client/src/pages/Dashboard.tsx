@@ -315,7 +315,7 @@ export default function Dashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-xl font-medium mb-1">
-                  {user?.firstName || "Learner"}
+                  Welcome, {user?.firstName || "Learner"}
                 </h1>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>{allCourses.length} courses</span>
