@@ -254,16 +254,16 @@ export default function Landing() {
         </div>
         
         <div className="relative w-full overflow-hidden">
-          <svg viewBox="0 0 900 180" className="w-full h-auto block" preserveAspectRatio="xMidYMid slice">
+          <svg viewBox="0 0 900 180" className="w-full h-auto block" preserveAspectRatio="xMinYMid slice">
             <defs>
               <style>
                 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
               </style>
             </defs>
             <text 
-              x="450" 
+              x="24" 
               y="140" 
-              textAnchor="middle" 
+              textAnchor="start" 
               className="fill-white/[0.08]"
               style={{ 
                 fontFamily: "'Space Grotesk', sans-serif",
