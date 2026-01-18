@@ -161,15 +161,18 @@ export class DatabaseStorage implements IStorage {
     const moduleIdList = moduleIds.map(m => m.id);
     
     if (moduleIdList.length > 0) {
+      // Delete progress records that reference these modules first
+      await db.delete(progress).where(inArray(progress.moduleId, moduleIdList));
       await db.delete(quizzes).where(inArray(quizzes.moduleId, moduleIdList));
       await db.delete(resources).where(inArray(resources.moduleId, moduleIdList));
     }
-    await db.delete(resources).where(eq(resources.courseId, id));
-    await db.delete(modules).where(eq(modules.courseId, id));
+    // Delete remaining progress by courseId (for records without moduleId)
     await db.delete(progress).where(eq(progress.courseId, id));
+    await db.delete(resources).where(eq(resources.courseId, id));
     await db.delete(studySessions).where(eq(studySessions.courseId, id));
     await db.delete(sources).where(eq(sources.notebookId, id));
     await db.delete(chatMessages).where(eq(chatMessages.notebookId, id));
+    await db.delete(modules).where(eq(modules.courseId, id));
     await db.delete(courses).where(eq(courses.id, id));
   }
 
