@@ -32,51 +32,63 @@ export default function Landing() {
 
       {/* Full-width Hero */}
       <div 
-        className="relative min-h-[80vh] md:min-h-[90vh] flex items-end"
+        className="relative min-h-[85vh] md:min-h-[90vh] flex items-end"
         style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 pb-12 md:pb-20">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 pb-16 md:pb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="max-w-3xl"
+          >
+            <motion.h1 
+              className="text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.05] tracking-[-0.02em] mb-8 text-white"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="max-w-2xl"
+              transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-medium leading-[1.1] tracking-tight mb-8 text-white">
-                Learn anything.<br />
-                One breath at a time.
-              </h1>
+              Learn anything.<br />
+              One breath at a time.
+            </motion.h1>
 
-              <p className="text-lg md:text-xl text-white/70 mb-10 leading-relaxed">
-                Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
-              </p>
+            <motion.p 
+              className="text-xl md:text-2xl text-white/70 mb-12 leading-relaxed max-w-xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
+            </motion.p>
 
-              <button
-                onClick={handleLogin}
-                className="group relative inline-flex items-center justify-center"
-                data-testid="button-get-started"
-              >
-                <div 
-                  className="absolute inset-0 rounded-full opacity-80 group-hover:opacity-100 transition-opacity"
-                  style={{
-                    background: "linear-gradient(90deg, #a78bfa, #60a5fa, #34d399, #fbbf24, #f472b6, #a78bfa)",
-                    backgroundSize: "200% 100%",
-                    padding: "2px",
-                  }}
-                />
-                <div className="relative flex items-center gap-2 bg-black rounded-full px-8 py-4 m-[2px]">
-                  <span className="text-lg font-medium text-white">Start learning</span>
-                  <ArrowRight className="w-5 h-5 text-white -rotate-45" strokeWidth={1.5} />
-                </div>
-              </button>
-            </motion.div>
-          </div>
+            <motion.button
+              onClick={handleLogin}
+              className="group relative inline-flex items-center justify-center"
+              data-testid="button-get-started"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div 
+                className="absolute inset-0 rounded-full opacity-90 group-hover:opacity-100 transition-all duration-300"
+                style={{
+                  background: "linear-gradient(135deg, #a78bfa, #60a5fa, #34d399, #fbbf24, #f472b6)",
+                  padding: "2px",
+                }}
+              />
+              <div className="relative flex items-center gap-3 bg-black/90 backdrop-blur-sm rounded-full px-10 py-5 m-[2px]">
+                <span className="text-lg font-medium text-white">Start learning</span>
+                <ArrowRight className="w-5 h-5 text-white -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" strokeWidth={1.5} />
+              </div>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
 
@@ -211,46 +223,31 @@ export default function Landing() {
       </main>
 
       <footer className="relative z-10 border-t border-border bg-foreground text-background overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 py-12">
-          <div className="mb-16">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-4 h-4 bg-background" />
-              <span className="text-sm font-medium">One Breath Lab</span>
-            </div>
-            <p className="text-sm text-background/60 max-w-xs">
-              Building understanding, one breath at a time.
-            </p>
+        <div className="px-6 md:px-12 lg:px-20 pt-16 pb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-4 h-4 bg-background" />
+            <span className="text-sm font-medium">One Breath Lab</span>
           </div>
+          <p className="text-sm text-background/50 max-w-sm">
+            Building understanding, one breath at a time.
+          </p>
         </div>
         
-        <div className="relative w-full overflow-hidden">
-          <svg viewBox="0 0 900 180" className="w-full h-auto block" preserveAspectRatio="xMinYMid slice">
-            <defs>
-              <style>
-                @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
-              </style>
-            </defs>
-            <text 
-              x="24" 
-              y="140" 
-              textAnchor="start" 
-              className="fill-white/[0.08]"
-              style={{ 
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: "145px",
-                fontWeight: 700,
-                letterSpacing: "-0.04em"
-              }}
-            >
-              one breath lab
-            </text>
-          </svg>
+        <div className="relative w-full overflow-hidden px-6 md:px-12 lg:px-20 pb-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-[18vw] md:text-[16vw] lg:text-[14vw] font-bold leading-[0.85] tracking-[-0.04em] text-white/[0.06] select-none whitespace-nowrap"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            one breath lab
+          </motion.div>
         </div>
         
-        <div className="border-t border-background/10 py-4">
-          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 text-xs text-background/40">
-            <p>&copy; {new Date().getFullYear()} One Breath Lab. All rights reserved.</p>
-          </div>
+        <div className="border-t border-background/10 py-4 px-6 md:px-12 lg:px-20">
+          <p className="text-xs text-background/40">&copy; {new Date().getFullYear()} One Breath Lab. All rights reserved.</p>
         </div>
       </footer>
     </div>
