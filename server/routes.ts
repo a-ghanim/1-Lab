@@ -1,28 +1,38 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 import { isAuthenticated } from "./replit_integrations/auth";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Claude model - claude-sonnet-4-20250514 is the latest
+const CLAUDE_MODEL = "claude-sonnet-4-20250514";
 
-function getGeminiModel(useProModel = false) {
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY not configured");
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+async function generateWithClaude(systemPrompt: string, userPrompt: string): Promise<string> {
+  const message = await anthropic.messages.create({
+    model: CLAUDE_MODEL,
+    max_tokens: 4096,
+    system: systemPrompt,
+    messages: [{ role: "user", content: userPrompt }],
+  });
+  
+  const content = message.content[0];
+  if (content.type === "text") {
+    return content.text;
   }
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const modelName = useProModel ? "gemini-2.5-pro" : "gemini-2.5-flash";
-  return genAI.getGenerativeModel({ model: modelName });
+  throw new Error("Unexpected response type");
 }
 
 async function searchVerifiedResources(topic: string, moduleTitle: string): Promise<any[]> {
-  if (!GEMINI_API_KEY) return [];
+  if (!process.env.ANTHROPIC_API_KEY) return [];
   
   try {
-    const model = getGeminiModel(false);
-    
-    const result = await model.generateContent([
-      `You are a research librarian. Find 3 REAL educational resources for learning about "${moduleTitle}" in the context of "${topic}".
+    const text = await generateWithClaude(
+      "You are a research librarian. Return ONLY valid JSON, no markdown.",
+      `Find 3 REAL educational resources for learning about "${moduleTitle}" in the context of "${topic}".
 
 IMPORTANT: Only recommend resources that ACTUALLY EXIST with REAL URLs:
 - MIT OpenCourseWare courses (ocw.mit.edu)
@@ -38,10 +48,7 @@ Return ONLY valid JSON array:
 ]
 
 If you're not certain a resource exists, DO NOT include it.`
-    ]);
-
-    const text = result.response.text();
-    if (!text) return [];
+    );
     
     const jsonMatch = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').match(/\[[\s\S]*\]/);
     if (jsonMatch) {
@@ -207,24 +214,14 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Prompt is required" });
       }
       
-      if (!GEMINI_API_KEY) {
+      if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(500).json({ error: "AI service not configured" });
       }
       
-      const model = getGeminiModel(true);
-      
-      const result = await model.generateContent([
+      const content = await generateWithClaude(
         CURRICULUM_PROMPT,
-        `Create a complete curriculum for the topic: "${prompt}". 
-        
-Make it engaging, progressive, and include interactive p5.js simulations.
-Return ONLY valid JSON, no markdown.`
-      ]);
-
-      const content = result.response.text();
-      if (!content) {
-        return res.status(500).json({ error: "No content generated" });
-      }
+        `Create a complete curriculum for the topic: "${prompt}". Make it engaging and progressive. Return ONLY valid JSON, no markdown.`
+      );
       
       let jsonStr = content
         .replace(/```json\s*/gi, '')
@@ -322,7 +319,7 @@ Return ONLY valid JSON, no markdown.`
       return;
     }
 
-    if (!GEMINI_API_KEY) {
+    if (!process.env.ANTHROPIC_API_KEY) {
       sendEvent('error', { message: 'AI service not configured' });
       res.end();
       return;
@@ -351,18 +348,10 @@ Return ONLY valid JSON, no markdown.`
       // Step 2: Generate course outline in background
       sendEvent('progress', { step: 'outline', message: 'Creating course outline...' });
 
-      const outlineModel = getGeminiModel(false);
-      const outlineResult = await outlineModel.generateContent([
+      const outlineContent = await generateWithClaude(
         COURSE_OUTLINE_PROMPT,
         `Create a course outline for: "${prompt}". Return ONLY valid JSON.`
-      ]);
-
-      const outlineContent = outlineResult.response.text();
-      if (!outlineContent) {
-        sendEvent('error', { message: 'Failed to generate outline' });
-        res.end();
-        return;
-      }
+      );
 
       let outlineJson = outlineContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
       let outline;
@@ -415,8 +404,6 @@ Return ONLY valid JSON, no markdown.`
       }
 
       // Step 3: Generate full content for each module
-      const contentModel = getGeminiModel(true); // Use pro for quality
-
       for (let i = 0; i < moduleRecords.length; i++) {
         const moduleRecord = moduleRecords[i];
         const moduleOutline = outline.modules[i];
@@ -428,19 +415,17 @@ Return ONLY valid JSON, no markdown.`
         });
 
         try {
-          const contentResult = await contentModel.generateContent([
+          const contentText = await generateWithClaude(
             MODULE_CONTENT_PROMPT,
             `Generate complete content for this module:
 Course: "${outline.title}"
 Module ${i + 1}: "${moduleOutline.title}"
 Description: "${moduleOutline.description}"
 
-The simulation should visualize concepts from this specific module.
 Return ONLY valid JSON.`
-          ]);
+          );
 
-          const contentText = contentResult.response.text();
-          let contentJson = contentText?.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim() || '{}';
+          let contentJson = contentText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim() || '{}';
           
           let content;
           try {
@@ -758,25 +743,18 @@ Return ONLY valid JSON.`
         .map(s => `Source: ${s.title}\n${s.content}`)
         .join("\n\n---\n\n");
       
-      if (!GEMINI_API_KEY) {
+      if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(500).json({ error: "AI service not configured" });
       }
-      
-      const model = getGeminiModel(true);
       
       const systemPrompt = sourceContext 
         ? `You are a helpful AI assistant. Answer the user's question based on the following sources. Cite specific sources when relevant. If the answer isn't in the sources, say so but still try to help.
 
 SOURCES:
-${sourceContext}
-
-USER QUESTION: ${message}`
-        : `You are a helpful AI assistant. The user hasn't added any sources yet. Encourage them to add documents, URLs, or text to get more personalized answers. Still try to answer their question helpfully.
-
-USER QUESTION: ${message}`;
+${sourceContext}`
+        : `You are a helpful AI assistant. The user hasn't added any sources yet. Encourage them to add documents, URLs, or text to get more personalized answers. Still try to answer their question helpfully.`;
       
-      const result = await model.generateContent([systemPrompt]);
-      const aiResponse = result.response.text() || "I couldn't generate a response.";
+      const aiResponse = await generateWithClaude(systemPrompt, message);
       
       // Save AI response
       const aiMessage = await storage.createChatMessage({
@@ -814,7 +792,7 @@ USER QUESTION: ${message}`;
   });
 
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", aiConfigured: !!GEMINI_API_KEY });
+    res.json({ status: "ok", aiConfigured: !!process.env.ANTHROPIC_API_KEY });
   });
 
   return httpServer;

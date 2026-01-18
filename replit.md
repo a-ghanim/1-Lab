@@ -86,11 +86,9 @@ One Breath Lab is a NotebookLM-style AI research and learning assistant. Users c
 - `streaks` - Daily learning streaks
 
 ### AI Integration
-- **Provider**: Google Gemini
-- **Models**: 
-  - `gemini-2.5-flash` - Fast responses (chat)
-  - `gemini-2.5-pro` - Complex reasoning (curriculum)
-- **API Key**: Server-side via GEMINI_API_KEY secret
+- **Provider**: Anthropic Claude
+- **Model**: `claude-sonnet-4-20250514` (latest)
+- **API Key**: Server-side via ANTHROPIC_API_KEY secret
 - **Features**: Source-grounded conversations, curriculum generation
 
 ## Core Features
