@@ -1,23 +1,19 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { FocusTimer } from "@/components/FocusTimer";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   Sparkles,
   BookOpen,
-  Clock,
-  Flame,
   ArrowRight,
   Loader2,
-  GraduationCap,
-  Target,
-  TrendingUp
+  Plus,
+  X
 } from "lucide-react";
 import type { Course } from "@shared/schema";
 
@@ -29,6 +25,7 @@ export default function Dashboard() {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState("");
+  const [showGenerator, setShowGenerator] = useState(false);
 
   const { data: courses = [], isLoading: coursesLoading } = useQuery<Course[]>({
     queryKey: ["/api/courses"],
@@ -101,6 +98,7 @@ export default function Dashboard() {
                 setGenerationStep("Course created! Loading modules...");
                 queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
                 setPrompt("");
+                setShowGenerator(false);
                 navigate(`/courses/${event.course.id}?streaming=true`);
                 return;
               } else if (event.type === "error") {
@@ -122,161 +120,153 @@ export default function Dashboard() {
     }
   };
 
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
-
   return (
     <Layout>
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8"
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-2">{greeting()}</p>
-                <h1 className="text-2xl md:text-3xl font-medium">
+                <h1 className="text-xl font-medium mb-1">
                   {user?.firstName || "Learner"}
                 </h1>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Flame className="w-4 h-4" />
-                  <span>{streak?.currentStreak || 0} day streak</span>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>{courses.length} courses</span>
+                  <span>{stats?.modulesCompleted || 0} modules</span>
+                  {(streak?.currentStreak || 0) > 0 && (
+                    <span>{streak?.currentStreak} day streak</span>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="p-6 md:p-8 bg-card border border-border">
-              <div className="mb-6">
-                <h2 className="text-lg font-medium mb-1">Create a new course</h2>
-                <p className="text-sm text-muted-foreground">
-                  Describe any topic and AI will generate a complete curriculum
-                </p>
-              </div>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Input
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !isGenerating && generateCourse()}
-                    placeholder="e.g., Quantum computing for beginners, Advanced machine learning, History of ancient Rome..."
-                    className="flex-1 h-12 px-4 text-base input-field"
-                    disabled={isGenerating}
-                    data-testid="input-course-prompt"
-                  />
-                  <Button
-                    onClick={generateCourse}
-                    disabled={!prompt.trim() || isGenerating}
-                    className="btn-primary h-12 px-6 gap-2"
-                    data-testid="button-generate-course"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        Generate
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-              <AnimatePresence>
-                {isGenerating && generationStep && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-4 pt-4 border-t border-border"
-                  >
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {generationStep}
-                    </p>
-                  </motion.div>
+              <Button
+                onClick={() => setShowGenerator(!showGenerator)}
+                className={showGenerator ? "btn-secondary" : "btn-primary"}
+                size="sm"
+                data-testid="button-toggle-generator"
+              >
+                {showGenerator ? (
+                  <>
+                    <X className="w-4 h-4 mr-1" strokeWidth={1.5} />
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />
+                    New course
+                  </>
                 )}
-              </AnimatePresence>
+              </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { icon: GraduationCap, label: "Courses", value: courses.length },
-                { icon: Target, label: "Modules Completed", value: stats?.modulesCompleted || 0 },
-                { icon: TrendingUp, label: "Hours Learned", value: stats?.hoursLearned || 0 },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="p-5 bg-card border border-border card-hover"
+            <AnimatePresence>
+              {showGenerator && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
                 >
-                  <div className="flex items-center gap-4">
-                    <stat.icon className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
-                    <div>
-                      <p className="text-xl font-medium">{stat.value}</p>
-                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <div className="p-5 bg-card border border-border">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Describe what you want to learn
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && !isGenerating && generateCourse()}
+                        placeholder="e.g., Quantum computing fundamentals, History of jazz..."
+                        className="flex-1 h-10 px-3 text-sm bg-background border border-border focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                        disabled={isGenerating}
+                        autoFocus
+                        data-testid="input-course-prompt"
+                      />
+                      <Button
+                        onClick={generateCourse}
+                        disabled={!prompt.trim() || isGenerating}
+                        className="btn-primary h-10 px-4 gap-2"
+                        data-testid="button-generate-course"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+                            Generate
+                          </>
+                        )}
+                      </Button>
                     </div>
+
+                    <AnimatePresence>
+                      {isGenerating && generationStep && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="mt-4 pt-4 border-t border-border"
+                        >
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            {generationStep}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </div>
-              ))}
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-medium">Your Courses</h2>
-              </div>
-
               {coursesLoading ? (
                 <div className="flex items-center justify-center h-48">
-                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
               ) : courses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 border border-dashed border-border bg-card">
-                  <BookOpen className="w-6 h-6 text-muted-foreground mb-3" strokeWidth={1.5} />
+                <div 
+                  className="flex flex-col items-center justify-center h-64 border border-dashed border-border cursor-pointer hover:border-foreground/20 transition-colors"
+                  onClick={() => setShowGenerator(true)}
+                >
+                  <Plus className="w-6 h-6 text-muted-foreground mb-3" strokeWidth={1.5} />
                   <p className="text-muted-foreground mb-1">No courses yet</p>
                   <p className="text-sm text-muted-foreground">
-                    Generate your first course above
+                    Click to create your first one
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border border-border">
                   {courses.map((course) => (
                     <motion.div
                       key={course.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      whileHover={{ y: -2 }}
-                      className="group cursor-pointer"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      whileHover={{ backgroundColor: "hsl(0 0% 98%)" }}
+                      className="group cursor-pointer bg-card"
                       onClick={() => navigate(`/courses/${course.id}`)}
                       data-testid={`card-course-${course.id}`}
                     >
-                      <div className="h-full p-5 bg-card border border-border transition-all group-hover:border-foreground/20">
+                      <div className="p-5 h-full">
                         <div className="flex items-start justify-between mb-3">
-                          <BookOpen className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
-                          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                          <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                          <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                         </div>
 
-                        <h3 className="font-medium mb-2 line-clamp-2">{course.title}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                        <h3 className="font-medium mb-1.5 line-clamp-2 leading-snug">{course.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
                           {course.description || "No description"}
                         </p>
 
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            {course.totalModules || 0} modules
-                          </span>
-                          <span className="flex items-center gap-1">
-                            {course.estimatedHours || 0}h
-                          </span>
+                        <div className="text-xs text-muted-foreground">
+                          {course.totalModules || 0} modules · {course.estimatedHours || 0}h
                         </div>
                       </div>
                     </motion.div>
