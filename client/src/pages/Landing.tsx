@@ -57,14 +57,24 @@ export default function Landing() {
                 Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
               </p>
 
-              <Button 
+              <button
                 onClick={handleLogin}
-                className="h-12 px-8 text-base bg-white text-black hover:bg-white/90"
+                className="group relative inline-flex items-center justify-center"
                 data-testid="button-get-started"
               >
-                Start learning
-                <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
-              </Button>
+                <div 
+                  className="absolute inset-0 rounded-full opacity-80 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    background: "linear-gradient(90deg, #a78bfa, #60a5fa, #34d399, #fbbf24, #f472b6, #a78bfa)",
+                    backgroundSize: "200% 100%",
+                    padding: "2px",
+                  }}
+                />
+                <div className="relative flex items-center gap-2 bg-black rounded-full px-8 py-4 m-[2px]">
+                  <span className="text-lg font-medium text-white">Start learning</span>
+                  <ArrowRight className="w-5 h-5 text-white -rotate-45" strokeWidth={1.5} />
+                </div>
+              </button>
             </motion.div>
           </div>
         </div>
