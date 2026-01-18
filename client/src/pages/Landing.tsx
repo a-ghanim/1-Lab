@@ -136,23 +136,27 @@ export default function Landing() {
               <BentoCard 
                 variant="lemon" 
                 size="lg" 
-                className="md:col-span-2 lg:col-span-2 relative"
+                className="md:col-span-2 lg:col-span-2"
                 delay={0}
               >
-                <SourcesIllustration />
-                <div className="flex flex-col h-full relative z-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 bg-yellow-500/10">
-                      <Layers className="w-5 h-5 text-yellow-600 dark:text-yellow-400" strokeWidth={1.5} />
+                <div className="flex flex-col md:flex-row gap-6 h-full">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2.5 bg-yellow-500/20 dark:bg-yellow-500/30">
+                        <Layers className="w-5 h-5 text-yellow-700 dark:text-yellow-300" strokeWidth={1.5} />
+                      </div>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Core concept</span>
                     </div>
-                    <span className="text-xs uppercase tracking-wider text-muted-foreground">Core concept</span>
+                    <h3 className="text-2xl md:text-3xl font-medium mb-4">
+                      Sources become curriculum
+                    </h3>
+                    <p className="text-muted-foreground leading-relaxed text-lg">
+                      Every paper, article, and note you add becomes part of a living knowledge base. AI structures your understanding into modules.
+                    </p>
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-medium mb-4">
-                    Sources become curriculum
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed text-lg max-w-lg">
-                    Every paper, article, and note you add becomes part of a living knowledge base. AI doesn't just search—it structures your understanding into modules that build on each other.
-                  </p>
+                  <div className="flex-shrink-0 w-full md:w-48 h-32 md:h-auto flex items-center justify-center">
+                    <SourcesIllustration />
+                  </div>
                 </div>
               </BentoCard>
 
@@ -160,19 +164,21 @@ export default function Landing() {
               <BentoCard 
                 variant="rose" 
                 size="md"
-                className="lg:row-span-2 relative"
+                className="lg:row-span-2"
                 delay={0.1}
               >
-                <BrainIllustration />
-                <div className="h-full flex flex-col relative z-10">
-                  <div className="p-2.5 bg-rose-500/10 w-fit mb-6">
-                    <Brain className="w-5 h-5 text-rose-600 dark:text-rose-400" strokeWidth={1.5} />
+                <div className="h-full flex flex-col">
+                  <div className="p-2.5 bg-rose-500/20 dark:bg-rose-500/30 w-fit mb-6">
+                    <Brain className="w-5 h-5 text-rose-700 dark:text-rose-300" strokeWidth={1.5} />
                   </div>
                   <h3 className="text-xl font-medium mb-3">Mental models, not answers</h3>
-                  <p className="text-muted-foreground leading-relaxed flex-1">
-                    Chat interfaces give you responses. We help you build frameworks for thinking. Every concept connects to what you already know.
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    Chat interfaces give you responses. We help you build frameworks for thinking.
                   </p>
-                  <div className="mt-6 pt-6 border-t border-rose-200/40 dark:border-rose-400/20">
+                  <div className="flex-1 flex items-center justify-center py-4">
+                    <BrainIllustration />
+                  </div>
+                  <div className="mt-auto pt-6 border-t border-rose-300/40 dark:border-rose-400/30">
                     <div className="text-4xl font-medium mb-1">4x</div>
                     <div className="text-sm text-muted-foreground">better retention vs passive reading</div>
                   </div>
@@ -180,61 +186,69 @@ export default function Landing() {
               </BentoCard>
 
               {/* Medium cards */}
-              <BentoCard variant="sky" size="md" delay={0.15} className="relative">
-                <CollectIllustration />
-                <div className="relative z-10">
-                  <div className="p-2.5 bg-sky-500/10 w-fit mb-5">
-                    <BookOpen className="w-5 h-5 text-sky-600 dark:text-sky-400" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">Collect sources</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Papers, articles, videos, notes—anything you're learning from. Build your personal research library.
-                  </p>
+              <BentoCard variant="sky" size="md" delay={0.15}>
+                <div className="p-2.5 bg-sky-500/20 dark:bg-sky-500/30 w-fit mb-4">
+                  <BookOpen className="w-5 h-5 text-sky-700 dark:text-sky-300" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Collect sources</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  Papers, articles, videos, notes—build your research library.
+                </p>
+                <div className="h-16 flex items-end">
+                  <CollectIllustration />
                 </div>
               </BentoCard>
 
-              <BentoCard variant="mint" size="md" delay={0.2} className="relative">
-                <ChatIllustration />
-                <div className="relative z-10">
-                  <div className="p-2.5 bg-emerald-500/10 w-fit mb-5">
-                    <MessageSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">Cited conversations</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Every AI response points back to your sources. You're not trusting a black box.
-                  </p>
+              <BentoCard variant="mint" size="md" delay={0.2}>
+                <div className="p-2.5 bg-emerald-500/20 dark:bg-emerald-500/30 w-fit mb-4">
+                  <MessageSquare className="w-5 h-5 text-emerald-700 dark:text-emerald-300" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Cited conversations</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  Every AI response points back to your sources.
+                </p>
+                <div className="h-20">
+                  <ChatIllustration />
                 </div>
               </BentoCard>
 
               {/* Bottom row */}
-              <BentoCard variant="peach" size="md" delay={0.25} className="relative">
-                <ProgressIllustration />
-                <div className="relative z-10">
-                  <div className="p-2.5 bg-orange-500/10 w-fit mb-5">
-                    <Target className="w-5 h-5 text-orange-600 dark:text-orange-400" strokeWidth={1.5} />
+              <BentoCard variant="peach" size="md" delay={0.25}>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <div className="p-2.5 bg-orange-500/20 dark:bg-orange-500/30 w-fit mb-4">
+                      <Target className="w-5 h-5 text-orange-700 dark:text-orange-300" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">Progress tracking</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Quizzes test understanding. Streaks build habits.
+                    </p>
                   </div>
-                  <h3 className="text-lg font-medium mb-2">Progress tracking</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Quizzes test understanding. Streaks build habits. Watch your knowledge compound.
-                  </p>
+                  <div className="flex-shrink-0 w-20 h-20">
+                    <ProgressIllustration />
+                  </div>
                 </div>
               </BentoCard>
 
               <BentoCard 
                 variant="lavender" 
                 size="md"
-                className="md:col-span-2 relative"
+                className="md:col-span-2"
                 delay={0.3}
               >
-                <AIGenerateIllustration />
-                <div className="relative z-10">
-                  <div className="p-2.5 bg-violet-500/10 w-fit mb-5">
-                    <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="p-2.5 bg-violet-500/20 dark:bg-violet-500/30 w-fit mb-4">
+                      <Zap className="w-5 h-5 text-violet-700 dark:text-violet-300" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">AI-generated courses</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Enter any topic. Get a structured curriculum with modules, key concepts, and knowledge checks—in seconds.
+                    </p>
                   </div>
-                  <h3 className="text-lg font-medium mb-2">AI-generated courses</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">
-                    Enter any topic. Get a structured curriculum with modules, key concepts, examples, and knowledge checks—in seconds.
-                  </p>
+                  <div className="flex-shrink-0 w-full md:w-44 h-20 md:h-auto">
+                    <AIGenerateIllustration />
+                  </div>
                 </div>
               </BentoCard>
             </div>

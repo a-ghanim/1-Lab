@@ -29,22 +29,31 @@ export function BentoCard({
     lemon: "border-yellow-200/60 dark:border-yellow-400/20",
   };
 
-  const pastelBackgrounds: Record<string, string> = {
-    rose: "linear-gradient(135deg, rgba(255, 228, 230, 0.7) 0%, rgba(254, 205, 211, 0.5) 100%)",
-    sky: "linear-gradient(135deg, rgba(224, 242, 254, 0.7) 0%, rgba(186, 230, 253, 0.5) 100%)",
-    mint: "linear-gradient(135deg, rgba(209, 250, 229, 0.7) 0%, rgba(167, 243, 208, 0.5) 100%)",
-    lavender: "linear-gradient(135deg, rgba(237, 233, 254, 0.7) 0%, rgba(221, 214, 254, 0.5) 100%)",
-    peach: "linear-gradient(135deg, rgba(255, 237, 213, 0.7) 0%, rgba(254, 215, 170, 0.5) 100%)",
-    lemon: "linear-gradient(135deg, rgba(254, 249, 195, 0.7) 0%, rgba(254, 240, 138, 0.5) 100%)",
-  };
-
-  const darkPastelBackgrounds: Record<string, string> = {
-    rose: "linear-gradient(135deg, rgba(136, 19, 55, 0.15) 0%, rgba(159, 18, 57, 0.1) 100%)",
-    sky: "linear-gradient(135deg, rgba(7, 89, 133, 0.15) 0%, rgba(14, 116, 144, 0.1) 100%)",
-    mint: "linear-gradient(135deg, rgba(6, 78, 59, 0.15) 0%, rgba(4, 120, 87, 0.1) 100%)",
-    lavender: "linear-gradient(135deg, rgba(76, 29, 149, 0.15) 0%, rgba(91, 33, 182, 0.1) 100%)",
-    peach: "linear-gradient(135deg, rgba(154, 52, 18, 0.15) 0%, rgba(194, 65, 12, 0.1) 100%)",
-    lemon: "linear-gradient(135deg, rgba(133, 77, 14, 0.15) 0%, rgba(161, 98, 7, 0.1) 100%)",
+  const pastelBackgrounds: Record<string, { light: string; dark: string }> = {
+    rose: {
+      light: "linear-gradient(135deg, rgba(255, 228, 230, 0.8) 0%, rgba(254, 205, 211, 0.6) 100%)",
+      dark: "linear-gradient(135deg, rgba(136, 19, 55, 0.25) 0%, rgba(159, 18, 57, 0.15) 100%)",
+    },
+    sky: {
+      light: "linear-gradient(135deg, rgba(224, 242, 254, 0.8) 0%, rgba(186, 230, 253, 0.6) 100%)",
+      dark: "linear-gradient(135deg, rgba(7, 89, 133, 0.25) 0%, rgba(14, 116, 144, 0.15) 100%)",
+    },
+    mint: {
+      light: "linear-gradient(135deg, rgba(209, 250, 229, 0.8) 0%, rgba(167, 243, 208, 0.6) 100%)",
+      dark: "linear-gradient(135deg, rgba(6, 78, 59, 0.25) 0%, rgba(4, 120, 87, 0.15) 100%)",
+    },
+    lavender: {
+      light: "linear-gradient(135deg, rgba(237, 233, 254, 0.8) 0%, rgba(221, 214, 254, 0.6) 100%)",
+      dark: "linear-gradient(135deg, rgba(76, 29, 149, 0.25) 0%, rgba(91, 33, 182, 0.15) 100%)",
+    },
+    peach: {
+      light: "linear-gradient(135deg, rgba(255, 237, 213, 0.8) 0%, rgba(254, 215, 170, 0.6) 100%)",
+      dark: "linear-gradient(135deg, rgba(154, 52, 18, 0.25) 0%, rgba(194, 65, 12, 0.15) 100%)",
+    },
+    lemon: {
+      light: "linear-gradient(135deg, rgba(254, 249, 195, 0.8) 0%, rgba(254, 240, 138, 0.6) 100%)",
+      dark: "linear-gradient(135deg, rgba(133, 77, 14, 0.25) 0%, rgba(161, 98, 7, 0.15) 100%)",
+    },
   };
 
   const isPastel = ["rose", "sky", "mint", "lavender", "peach", "lemon"].includes(variant);
@@ -67,13 +76,19 @@ export function BentoCard({
         ${sizeClasses[size]}
         ${className}
       `}
-      style={isPastel ? { background: pastelBackgrounds[variant] } : undefined}
+      style={isPastel ? { background: `var(--pastel-bg)` } : undefined}
     >
       {isPastel && (
-        <div 
-          className="absolute inset-0 pointer-events-none dark:block hidden"
-          style={{ background: darkPastelBackgrounds[variant] }}
-        />
+        <>
+          <div 
+            className="absolute inset-0 pointer-events-none dark:hidden"
+            style={{ background: pastelBackgrounds[variant].light }}
+          />
+          <div 
+            className="absolute inset-0 pointer-events-none hidden dark:block"
+            style={{ background: pastelBackgrounds[variant].dark }}
+          />
+        </>
       )}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
