@@ -253,24 +253,23 @@ export default function Landing() {
           </div>
         </div>
         
-        <div className="relative w-full overflow-hidden py-8">
-          <svg viewBox="0 0 100 18" className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+        <div className="relative w-full overflow-hidden">
+          <svg viewBox="0 0 900 180" className="w-full h-auto block" preserveAspectRatio="xMidYMid slice">
             <defs>
               <style>
-                @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
               </style>
             </defs>
             <text 
-              x="50" 
-              y="14" 
+              x="450" 
+              y="140" 
               textAnchor="middle" 
-              className="fill-background/[0.12]"
+              className="fill-white/[0.08]"
               style={{ 
-                fontFamily: "'Instrument Serif', Georgia, serif",
-                fontSize: "12px",
-                fontWeight: 400,
-                fontStyle: "italic",
-                letterSpacing: "-0.01em"
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: "145px",
+                fontWeight: 700,
+                letterSpacing: "-0.04em"
               }}
             >
               one breath lab
