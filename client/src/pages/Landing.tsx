@@ -15,9 +15,8 @@ export default function Landing() {
       <NoiseOverlay opacity={0.04} />
       
       <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-6 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-foreground" />
-          <span className="font-medium">One Breath Lab</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xl font-bold tracking-tight">1Lab</span>
         </div>
 
         <Button 
@@ -53,8 +52,8 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              Learn anything.<br />
-              One breath at a time.
+              Turn any topic<br />
+              into a classroom
             </motion.h1>
 
             <motion.p 
@@ -63,7 +62,7 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
+              Upload your sources. Chat with AI. Build a curriculum that adapts to how you learn. Not another chat-with-PDF tool—a lab for building real understanding.
             </motion.p>
 
             <motion.button
@@ -224,12 +223,11 @@ export default function Landing() {
 
       <footer className="relative z-10 border-t border-border bg-foreground text-background overflow-hidden">
         <div className="px-6 md:px-12 lg:px-20 pt-16 pb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-4 h-4 bg-background" />
-            <span className="text-sm font-medium">One Breath Lab</span>
+          <div className="mb-3">
+            <span className="text-xl font-bold tracking-tight">1Lab</span>
           </div>
           <p className="text-sm text-background/50 max-w-sm">
-            Building understanding, one breath at a time.
+            Turn any topic into a classroom.
           </p>
         </div>
         
@@ -239,15 +237,15 @@ export default function Landing() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-[18vw] md:text-[16vw] lg:text-[14vw] font-bold leading-[0.85] tracking-[-0.04em] text-white/[0.06] select-none whitespace-nowrap"
+            className="text-[28vw] md:text-[24vw] lg:text-[22vw] font-bold leading-[0.85] tracking-[-0.04em] text-white/[0.06] select-none whitespace-nowrap"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            one breath lab
+            1Lab
           </motion.div>
         </div>
         
         <div className="border-t border-background/10 py-4 px-6 md:px-12 lg:px-20">
-          <p className="text-xs text-background/40">&copy; {new Date().getFullYear()} One Breath Lab. All rights reserved.</p>
+          <p className="text-xs text-background/40">&copy; {new Date().getFullYear()} 1Lab. All rights reserved.</p>
         </div>
       </footer>
     </div>
