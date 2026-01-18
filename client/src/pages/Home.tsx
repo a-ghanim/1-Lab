@@ -19,6 +19,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -110,6 +111,7 @@ export default function Home() {
           <DialogContent className="bg-card border-border">
             <DialogHeader>
               <DialogTitle>Lab Settings</DialogTitle>
+              <DialogDescription>Configure your simulation generator</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
