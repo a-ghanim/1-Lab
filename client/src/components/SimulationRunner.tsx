@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Card } from "@/components/ui/card";
-import { Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { motion } from 'framer-motion';
 
 declare global {
   interface Window {
@@ -18,25 +16,24 @@ export function SimulationRunner({ code, className }: SimulationRunnerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const p5InstanceRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || !code) return;
 
-    // Cleanup previous instance
     if (p5InstanceRef.current) {
       p5InstanceRef.current.remove();
       p5InstanceRef.current = null;
     }
+    
+    setIsLoaded(false);
 
     try {
-      // Create the sketch function from the string
-      // The code string contains "p.setup = ...; p.draw = ...;"
-      // We wrap it in a function that accepts 'p'
       const sketchFunction = new Function('p', code);
       
-      // Initialize p5 in instance mode
       if (window.p5) {
         p5InstanceRef.current = new window.p5(sketchFunction, containerRef.current);
+        setTimeout(() => setIsLoaded(true), 100);
       } else {
         setError("p5.js library not loaded. Please refresh.");
       }
@@ -53,14 +50,40 @@ export function SimulationRunner({ code, className }: SimulationRunnerProps) {
   }, [code]);
 
   return (
-    <div className={`relative w-full aspect-[3/2] bg-black/20 rounded-xl overflow-hidden ${className}`}>
-      <div ref={containerRef} className="w-full h-full flex justify-center items-center canvas-container" />
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: isLoaded ? 1 : 0.5, scale: 1 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className={`relative w-full aspect-[3/2] rounded-3xl overflow-hidden ${className}`}
+    >
+      {/* Outer glow effect */}
+      <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-xl opacity-50 animate-gradient" />
       
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-400 p-4 text-center">
-          <p>{error}</p>
-        </div>
-      )}
-    </div>
+      {/* Glass container */}
+      <div className="relative w-full h-full glass-strong rounded-3xl overflow-hidden">
+        {/* Inner border glow */}
+        <div className="absolute inset-0 rounded-3xl ring-1 ring-white/10 ring-inset" />
+        
+        {/* Canvas */}
+        <div 
+          ref={containerRef} 
+          className="w-full h-full flex justify-center items-center canvas-container" 
+        />
+        
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90 text-red-400 p-4 text-center backdrop-blur-xl">
+            <p>{error}</p>
+          </div>
+        )}
+        
+        {/* Scanline effect */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-[0.02]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)'
+          }}
+        />
+      </div>
+    </motion.div>
   );
 }
