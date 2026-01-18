@@ -30,64 +30,113 @@ export default function Landing() {
         </Button>
       </header>
 
-      {/* Full-width Hero */}
-      <div 
-        className="relative min-h-[85vh] md:min-h-[90vh] flex items-end"
-        style={{
-          backgroundImage: `url(${heroBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 pb-16 md:pb-24">
+      {/* Hero Section */}
+      <div className="relative min-h-[90vh] flex flex-col justify-center px-6 md:px-12 lg:px-20 overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(80px) saturate(1.2)",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background/80" />
+        
+        <div className="relative z-10 max-w-5xl mx-auto w-full py-20">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="max-w-3xl"
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="text-center"
           >
-            <motion.h1 
-              className="text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.05] tracking-[-0.02em] mb-8 text-white"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8"
             >
-              Learn anything.<br />
-              One breath at a time.
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-sm text-primary font-medium">AI-Powered Learning Lab</span>
+            </motion.div>
+
+            <motion.h1 
+              className="text-5xl md:text-7xl lg:text-8xl font-semibold leading-[0.95] tracking-[-0.03em] mb-8"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+            >
+              <span className="block">Turn chaos into</span>
+              <span 
+                className="block bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: "linear-gradient(135deg, #a78bfa 0%, #60a5fa 35%, #34d399 70%, #fbbf24 100%)",
+                }}
+              >
+                clarity
+              </span>
             </motion.h1>
 
             <motion.p 
-              className="text-xl md:text-2xl text-white/70 mb-12 leading-relaxed max-w-xl"
+              className="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-2xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
             >
-              Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
+              Transform scattered sources into structured knowledge. Build mental models, not bookmark folders.
             </motion.p>
 
-            <motion.button
-              onClick={handleLogin}
-              className="group relative inline-flex items-center justify-center"
-              data-testid="button-get-started"
+            <motion.div
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.6, delay: 0.35 }}
             >
-              <div 
-                className="absolute inset-0 rounded-full opacity-90 group-hover:opacity-100 transition-all duration-300"
-                style={{
-                  background: "linear-gradient(135deg, #a78bfa, #60a5fa, #34d399, #fbbf24, #f472b6)",
-                  padding: "2px",
-                }}
-              />
-              <div className="relative flex items-center gap-3 bg-black/90 backdrop-blur-sm rounded-full px-10 py-5 m-[2px]">
-                <span className="text-lg font-medium text-white">Start learning</span>
-                <ArrowRight className="w-5 h-5 text-white -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" strokeWidth={1.5} />
+              <motion.button
+                onClick={handleLogin}
+                className="group relative inline-flex items-center justify-center"
+                data-testid="button-get-started"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div 
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: "linear-gradient(135deg, #a78bfa, #60a5fa, #34d399)",
+                  }}
+                />
+                <div className="relative flex items-center gap-3 px-8 py-4 m-[1px] rounded-full bg-foreground text-background">
+                  <span className="text-base font-semibold">Start learning free</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" strokeWidth={2} />
+                </div>
+              </motion.button>
+
+              <motion.button
+                onClick={() => document.querySelector('main')?.scrollIntoView({ behavior: 'smooth' })}
+                className="flex items-center gap-2 px-6 py-4 text-muted-foreground hover:text-foreground transition-colors"
+                whileHover={{ y: -2 }}
+              >
+                <span className="text-base">See how it works</span>
+              </motion.button>
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            className="mt-20 grid grid-cols-3 gap-8 max-w-lg mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
+            {[
+              { value: "10k+", label: "Active learners" },
+              { value: "500k", label: "Sources processed" },
+              { value: "4.9", label: "User rating" },
+            ].map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-2xl md:text-3xl font-semibold">{stat.value}</div>
+                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
               </div>
-            </motion.button>
+            ))}
           </motion.div>
         </div>
       </div>
