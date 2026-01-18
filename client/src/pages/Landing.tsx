@@ -195,9 +195,52 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-border py-6 bg-background/80 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 text-xs text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} One Breath Lab</p>
+      <footer className="relative z-10 border-t border-border bg-foreground text-background overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 py-12">
+          <div className="flex flex-col md:flex-row justify-between gap-8 mb-16">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-4 h-4 bg-background" />
+                <span className="text-sm font-medium">One Breath Lab</span>
+              </div>
+              <p className="text-sm text-background/60 max-w-xs">
+                Building understanding, one breath at a time.
+              </p>
+            </div>
+            <div className="flex gap-12 text-sm">
+              <div>
+                <div className="text-background/40 mb-3">Product</div>
+                <div className="space-y-2 text-background/70">
+                  <div>Features</div>
+                  <div>Pricing</div>
+                  <div>Changelog</div>
+                </div>
+              </div>
+              <div>
+                <div className="text-background/40 mb-3">Company</div>
+                <div className="space-y-2 text-background/70">
+                  <div>About</div>
+                  <div>Blog</div>
+                  <div>Contact</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative -mb-[0.15em]">
+          <div 
+            className="text-[18vw] md:text-[15vw] font-medium leading-none tracking-tighter text-background/[0.08] select-none whitespace-nowrap overflow-hidden"
+            style={{ fontFamily: "Inter, system-ui, sans-serif" }}
+          >
+            one breath lab
+          </div>
+        </div>
+        
+        <div className="border-t border-background/10 py-4">
+          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 text-xs text-background/40">
+            <p>&copy; {new Date().getFullYear()} One Breath Lab. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
