@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useState, useEffect, useCallback } from "react";
+import { useRoute, useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { SimulationRunner } from "@/components/SimulationRunner";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,8 @@ import {
   Check,
   X,
   FileText,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Course, Module, Quiz, Resource } from "@shared/schema";
@@ -30,12 +31,17 @@ import type { Course, Module, Quiz, Resource } from "@shared/schema";
 export default function CourseView() {
   const [, params] = useRoute("/courses/:id");
   const [, navigate] = useLocation();
+  const searchString = useSearch();
+  const isStreaming = searchString.includes("streaming=true");
   const courseId = params?.id;
+  const queryClient = useQueryClient();
 
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(0);
   const [showCode, setShowCode] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
+  const [generatingModules, setGeneratingModules] = useState<Set<string>>(new Set());
+  const [completedModules, setCompletedModules] = useState<Set<string>>(new Set());
 
   const { data: course, isLoading: courseLoading } = useQuery<Course>({
     queryKey: ["/api/courses", courseId],
@@ -55,7 +61,22 @@ export default function CourseView() {
       return res.json();
     },
     enabled: !!courseId,
+    refetchInterval: isStreaming ? 3000 : false,
   });
+
+  const isModuleLoading = useCallback((module: Module) => {
+    const content = module.content as any;
+    return content?.loading === true || (!module.simulationCode && !content?.overview);
+  }, []);
+
+  useEffect(() => {
+    if (isStreaming && modules.length > 0) {
+      const allLoaded = modules.every(m => !isModuleLoading(m));
+      if (allLoaded) {
+        navigate(`/courses/${courseId}`, { replace: true });
+      }
+    }
+  }, [modules, isStreaming, courseId, navigate, isModuleLoading]);
 
   const currentModule = modules[selectedModuleIndex];
 
@@ -155,29 +176,47 @@ export default function CourseView() {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-card border border-border/50">
-                  <h3 className="font-medium mb-4 px-2">Modules</h3>
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <h3 className="font-medium">Modules</h3>
+                    {isStreaming && (
+                      <span className="flex items-center gap-1.5 text-xs text-accent">
+                        <Sparkles className="w-3 h-3 animate-pulse" />
+                        Generating...
+                      </span>
+                    )}
+                  </div>
                   <div className="space-y-1">
-                    {modules.map((module, idx) => (
-                      <button
-                        key={module.id}
-                        onClick={() => setSelectedModuleIndex(idx)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
-                          idx === selectedModuleIndex
-                            ? "bg-primary/10 text-primary"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                        data-testid={`button-module-${idx}`}
-                      >
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                          idx === selectedModuleIndex
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}>
-                          {idx + 1}
-                        </div>
-                        <span className="truncate">{module.title}</span>
-                      </button>
-                    ))}
+                    {modules.map((module, idx) => {
+                      const moduleLoading = isModuleLoading(module);
+                      return (
+                        <button
+                          key={module.id}
+                          onClick={() => setSelectedModuleIndex(idx)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
+                            idx === selectedModuleIndex
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                          data-testid={`button-module-${idx}`}
+                        >
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                            idx === selectedModuleIndex
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}>
+                            {moduleLoading ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              idx + 1
+                            )}
+                          </div>
+                          <span className="truncate flex-1">{module.title}</span>
+                          {moduleLoading && (
+                            <span className="text-xs text-accent">...</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -200,7 +239,62 @@ export default function CourseView() {
                     </p>
                   </div>
 
-                  {currentModule.simulationCode && (
+                  {isModuleLoading(currentModule) ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-6"
+                    >
+                      <div className="p-8 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
+                        <div className="relative mb-6">
+                          <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl animate-pulse" />
+                          <div className="relative p-4 rounded-full bg-accent/10">
+                            <Sparkles className="w-8 h-8 text-accent animate-pulse" />
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">Generating module content...</h3>
+                        <p className="text-sm text-muted-foreground max-w-md">
+                          AI is creating simulations, quizzes, and resources for this module. 
+                          This usually takes 15-30 seconds per module.
+                        </p>
+                        <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Please wait...
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+                        <div className="h-64 bg-muted/50 rounded-xl animate-pulse" />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+                        <div className="h-24 bg-muted/50 rounded-xl animate-pulse" />
+                        <div className="h-24 bg-muted/50 rounded-xl animate-pulse" />
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <>
+                      {(currentModule.content as any)?.overview && (
+                        <div className="prose prose-invert max-w-none">
+                          <p className="text-foreground/90 leading-relaxed">
+                            {(currentModule.content as any).overview}
+                          </p>
+                          {(currentModule.content as any)?.keyPoints && (
+                            <ul className="mt-4 space-y-2">
+                              {(currentModule.content as any).keyPoints.map((point: string, i: number) => (
+                                <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                                  <Check className="w-4 h-4 text-primary mt-1 shrink-0" />
+                                  {point}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+
+                      {currentModule.simulationCode && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold flex items-center gap-2">
                         <Play className="w-5 h-5 text-primary" />
@@ -328,27 +422,29 @@ export default function CourseView() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-6 border-t border-border/50">
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedModuleIndex(Math.max(0, selectedModuleIndex - 1))}
-                      disabled={selectedModuleIndex === 0}
-                      className="gap-2"
-                      data-testid="button-prev-module"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Previous
-                    </Button>
-                    <Button
-                      onClick={() => setSelectedModuleIndex(Math.min(modules.length - 1, selectedModuleIndex + 1))}
-                      disabled={selectedModuleIndex === modules.length - 1}
-                      className="btn-primary gap-2"
-                      data-testid="button-next-module"
-                    >
-                      Next
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+                      <div className="flex items-center justify-between pt-6 border-t border-border/50">
+                        <Button
+                          variant="outline"
+                          onClick={() => setSelectedModuleIndex(Math.max(0, selectedModuleIndex - 1))}
+                          disabled={selectedModuleIndex === 0}
+                          className="gap-2"
+                          data-testid="button-prev-module"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                          Previous
+                        </Button>
+                        <Button
+                          onClick={() => setSelectedModuleIndex(Math.min(modules.length - 1, selectedModuleIndex + 1))}
+                          disabled={selectedModuleIndex === modules.length - 1}
+                          className="btn-primary gap-2"
+                          data-testid="button-next-module"
+                        >
+                          Next
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               ) : (
                 <div className="flex items-center justify-center h-64">

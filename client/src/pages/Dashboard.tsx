@@ -53,10 +53,10 @@ export default function Dashboard() {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
-    setGenerationStep("Analyzing your prompt...");
+    setGenerationStep("Creating course outline...");
     
     try {
-      const response = await fetch("/api/courses/generate", {
+      const response = await fetch("/api/courses/generate-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -68,17 +68,47 @@ export default function Dashboard() {
         throw new Error(error.error || "Failed to generate course");
       }
       
-      const course = await response.json();
-      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-      toast({ description: "Course created successfully!" });
-      setPrompt("");
-      navigate(`/courses/${course.id}`);
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response stream");
+      
+      const decoder = new TextDecoder();
+      let buffer = "";
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              
+              if (event.type === "progress") {
+                setGenerationStep(event.message);
+              } else if (event.type === "course_created") {
+                setGenerationStep("Course created! Loading modules...");
+                queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+                setPrompt("");
+                navigate(`/courses/${event.course.id}?streaming=true`);
+                return;
+              } else if (event.type === "error") {
+                throw new Error(event.message);
+              }
+            } catch (e) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+        }
+      }
     } catch (error: any) {
       toast({ 
         description: error.message || "Failed to generate course", 
         variant: "destructive" 
       });
-    } finally {
       setIsGenerating(false);
       setGenerationStep("");
     }
