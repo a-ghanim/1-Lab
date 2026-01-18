@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   Sparkles,
-  Plus,
   BookOpen,
   Clock,
   Flame,
@@ -18,8 +17,7 @@ import {
   Loader2,
   GraduationCap,
   Target,
-  TrendingUp,
-  Atom
+  TrendingUp
 } from "lucide-react";
 import type { Course } from "@shared/schema";
 
@@ -142,39 +140,27 @@ export default function Dashboard() {
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-semibold mb-2">
-                  {greeting()}, {user?.firstName || "Learner"}
+                <p className="text-sm text-muted-foreground mb-2">{greeting()}</p>
+                <h1 className="text-2xl md:text-3xl font-medium">
+                  {user?.firstName || "Learner"}
                 </h1>
-                <p className="text-muted-foreground">
-                  What would you like to learn today?
-                </p>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-orange-500/10">
-                  <Flame className="w-5 h-5 text-orange-400" />
-                  <div>
-                    <p className="text-sm font-semibold text-orange-400">{streak?.currentStreak || 0} day streak</p>
-                    <p className="text-xs text-muted-foreground">Best: {streak?.longestStreak || 0}</p>
-                  </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Flame className="w-4 h-4" />
+                  <span>{streak?.currentStreak || 0} day streak</span>
                 </div>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-3xl blur-xl" />
-              <div className="relative p-6 md:p-8 rounded-3xl bg-card border border-border/50">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="p-3 rounded-xl bg-primary/10">
-                    <Sparkles className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold mb-1">Spawn a new course</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Describe any topic and AI will generate a complete curriculum
-                    </p>
-                  </div>
-                </div>
+            <div className="p-6 md:p-8 bg-card border border-border">
+              <div className="mb-6">
+                <h2 className="text-lg font-medium mb-1">Create a new course</h2>
+                <p className="text-sm text-muted-foreground">
+                  Describe any topic and AI will generate a complete curriculum
+                </p>
+              </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Input
@@ -206,40 +192,37 @@ export default function Dashboard() {
                   </Button>
                 </div>
 
-                <AnimatePresence>
-                  {isGenerating && generationStep && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 pt-4 border-t border-border/50"
-                    >
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                        {generationStep}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <AnimatePresence>
+                {isGenerating && generationStep && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-4 pt-4 border-t border-border"
+                  >
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {generationStep}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { icon: GraduationCap, label: "Courses", value: courses.length, color: "text-primary" },
-                { icon: Target, label: "Modules Completed", value: stats?.modulesCompleted || 0, color: "text-accent" },
-                { icon: TrendingUp, label: "Hours Learned", value: stats?.hoursLearned || 0, color: "text-green-400" },
+                { icon: GraduationCap, label: "Courses", value: courses.length },
+                { icon: Target, label: "Modules Completed", value: stats?.modulesCompleted || 0 },
+                { icon: TrendingUp, label: "Hours Learned", value: stats?.hoursLearned || 0 },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="p-6 rounded-2xl bg-card border border-border/50 card-hover"
+                  className="p-5 bg-card border border-border card-hover"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-muted">
-                      <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                    </div>
+                    <stat.icon className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
                     <div>
-                      <p className="text-2xl font-semibold">{stat.value}</p>
+                      <p className="text-xl font-medium">{stat.value}</p>
                       <p className="text-sm text-muted-foreground">{stat.label}</p>
                     </div>
                   </div>
@@ -249,7 +232,7 @@ export default function Dashboard() {
 
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold">Your Courses</h2>
+                <h2 className="text-lg font-medium">Your Courses</h2>
               </div>
 
               {coursesLoading ? (
@@ -257,47 +240,41 @@ export default function Dashboard() {
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                 </div>
               ) : courses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 rounded-2xl border border-dashed border-border/50 bg-card/50">
-                  <div className="p-4 rounded-full bg-muted/50 mb-4">
-                    <BookOpen className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground mb-2">No courses yet</p>
+                <div className="flex flex-col items-center justify-center h-48 border border-dashed border-border bg-card">
+                  <BookOpen className="w-6 h-6 text-muted-foreground mb-3" strokeWidth={1.5} />
+                  <p className="text-muted-foreground mb-1">No courses yet</p>
                   <p className="text-sm text-muted-foreground">
-                    Generate your first course using the prompt above
+                    Generate your first course above
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {courses.map((course) => (
                     <motion.div
                       key={course.id}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      whileHover={{ y: -4 }}
+                      whileHover={{ y: -2 }}
                       className="group cursor-pointer"
                       onClick={() => navigate(`/courses/${course.id}`)}
                       data-testid={`card-course-${course.id}`}
                     >
-                      <div className="h-full p-6 rounded-2xl bg-card border border-border/50 transition-all group-hover:border-primary/30 group-hover:shadow-lg group-hover:shadow-primary/5">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10">
-                            <Atom className="w-6 h-6 text-primary" />
-                          </div>
-                          <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                      <div className="h-full p-5 bg-card border border-border transition-all group-hover:border-foreground/20">
+                        <div className="flex items-start justify-between mb-3">
+                          <BookOpen className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
+                          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                         </div>
 
-                        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{course.title}</h3>
+                        <h3 className="font-medium mb-2 line-clamp-2">{course.title}</h3>
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                           {course.description || "No description"}
                         </p>
 
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <BookOpen className="w-3.5 h-3.5" />
                             {course.totalModules || 0} modules
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
                             {course.estimatedHours || 0}h
                           </span>
                         </div>

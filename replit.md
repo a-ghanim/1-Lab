@@ -6,26 +6,28 @@ One Breath Lab is a NotebookLM-style AI research and learning assistant. Users c
 ## Design System
 
 ### Art Direction
-- **Style**: Paper.design minimalism + Micro.so dreamy aesthetic
-- **Mood**: Clean, contemplative, elevated
+- **Style**: Paper.design minimalism - clean, editorial, grid-based
+- **Mood**: Light, contemplative, understated elegance
 
 ### Typography
 - **Font**: Inter with stylistic sets
-- **Weights**: Regular (400), Medium (500), Semibold (600)
+- **Weights**: Regular (400), Medium (500)
 - **Tracking**: Tight (-0.01em)
+- **Icon style**: strokeWidth={1.5} for all lucide icons
 
 ### Color Palette
-- **Background**: Deep charcoal (`hsl(0 0% 8%)` / #151515)
-- **Foreground**: Cream white (`hsl(48 30% 94%)` / #F0EFE4)
-- **Primary**: Cream (`hsl(48 30% 90%)`) - main actions
-- **Accent**: Soft purple (`hsl(280 60% 65%)`) - highlights
-- **Muted**: Dark gray (`hsl(0 0% 16%)`) - secondary surfaces
+- **Background**: Light cream (`hsl(48 30% 94%)` / #F0EFE4)
+- **Foreground**: Near black (`hsl(0 0% 12%)` / #1F1F1F)
+- **Primary**: Black (`hsl(0 0% 12%)`) - buttons, actions
+- **Card**: Pure white (`hsl(0 0% 100%)`)
+- **Muted**: Light gray (`hsl(0 0% 96%)`)
+- **Border**: Soft gray (`hsl(0 0% 88%)`)
 
 ### Visual Effects
-- Subtle glass morphism with blur
-- Gradient backgrounds for hero sections
-- Smooth hover transitions (0.2-0.3s)
-- Card hover lift effects
+- Dot grid pattern background (1px dots, 24px spacing, 8% opacity)
+- Zero border-radius (sharp corners everywhere)
+- Minimal shadows, prefer borders
+- Subtle hover transitions (0.2s)
 
 ## Architecture
 

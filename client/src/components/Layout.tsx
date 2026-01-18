@@ -2,7 +2,6 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Atom, 
   Home, 
   Settings, 
   LogOut, 
@@ -36,20 +35,18 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground dot-grid">
       {showNav && isAuthenticated && (
-        <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border/50">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+            <div className="flex items-center justify-between h-14">
               <div className="flex items-center gap-8">
                 <Link 
                   href="/dashboard"
-                  className="flex items-center gap-3 group"
+                  className="flex items-center gap-2 group"
                 >
-                  <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                    <Atom className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="font-semibold text-lg hidden sm:block">One Breath Lab</span>
+                  <div className="w-5 h-5 bg-primary" />
+                  <span className="font-semibold hidden sm:block">One Breath Lab</span>
                 </Link>
 
                 <nav className="hidden md:flex items-center gap-1">
@@ -59,14 +56,14 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                       <Link 
                         key={item.href} 
                         href={item.href}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                        className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition-colors
                           ${isActive 
-                            ? "bg-primary/10 text-primary" 
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            ? "text-foreground" 
+                            : "text-muted-foreground hover:text-foreground"
                           }`}
                         data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                       >
-                        <item.icon className="w-4 h-4" />
+                        <item.icon className="w-4 h-4" strokeWidth={1.5} />
                         {item.label}
                       </Link>
                     );
@@ -75,25 +72,25 @@ export function Layout({ children, showNav = true }: LayoutProps) {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-400">
+                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 text-sm text-muted-foreground">
                   <Flame className="w-4 h-4" />
-                  <span className="text-sm font-medium">0</span>
+                  <span className="font-medium">0</span>
                 </div>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button 
-                      className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-muted transition-colors"
+                      className="flex items-center gap-2 p-1 hover:bg-muted transition-colors"
                       data-testid="button-user-menu"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center overflow-hidden">
+                      <div className="w-7 h-7 bg-muted flex items-center justify-center overflow-hidden">
                         {user?.profileImageUrl ? (
                           <img src={user.profileImageUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <User className="w-4 h-4 text-primary" />
+                          <User className="w-4 h-4 text-muted-foreground" />
                         )}
                       </div>
-                      <ChevronDown className="w-4 h-4 text-muted-foreground hidden sm:block" />
+                      <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:block" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
@@ -121,7 +118,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                 </DropdownMenu>
 
                 <button
-                  className="md:hidden p-2 rounded-lg hover:bg-muted"
+                  className="md:hidden p-2 hover:bg-muted"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   data-testid="button-mobile-menu"
                 >
@@ -137,9 +134,9 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="md:hidden border-t border-border/50 bg-card"
+                className="md:hidden border-t border-border bg-background"
               >
-                <nav className="p-4 space-y-2">
+                <nav className="p-4 space-y-1">
                   {navItems.map((item) => {
                     const isActive = location === item.href;
                     return (
@@ -147,13 +144,13 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                         key={item.href} 
                         href={item.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                        className={`flex items-center gap-3 px-3 py-2 text-sm font-medium
                           ${isActive 
-                            ? "bg-primary/10 text-primary" 
+                            ? "text-foreground bg-muted" 
                             : "text-muted-foreground hover:bg-muted"
                           }`}
                       >
-                        <item.icon className="w-5 h-5" />
+                        <item.icon className="w-4 h-4" strokeWidth={1.5} />
                         {item.label}
                       </Link>
                     );
@@ -165,7 +162,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
         </header>
       )}
 
-      <main className={showNav && isAuthenticated ? "pt-16" : ""}>
+      <main className={showNav && isAuthenticated ? "pt-14" : ""}>
         {children}
       </main>
     </div>

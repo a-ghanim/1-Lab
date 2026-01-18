@@ -97,17 +97,17 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+    <div className="h-full flex flex-col bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="font-medium text-sm">Sources</span>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setShowAddModal(true)}
-          className="text-accent hover:text-accent"
+          className="h-7 w-7 p-0"
           data-testid="button-add-source"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" strokeWidth={1.5} />
         </Button>
       </div>
 
@@ -118,16 +118,14 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
           </div>
         ) : sources.length === 0 ? (
           <div className="text-center py-8">
-            <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-3">
-              <FileText className="w-5 h-5 text-muted-foreground" />
-            </div>
+            <FileText className="w-5 h-5 mx-auto mb-3 text-muted-foreground" strokeWidth={1.5} />
             <p className="text-muted-foreground text-sm">No sources yet</p>
             <p className="text-muted-foreground/60 text-xs mt-1">
-              Add documents, text, or URLs
+              Add text or URLs
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <AnimatePresence>
               {sources.map((source) => {
                 const Icon = getSourceIcon(source.type);
@@ -137,13 +135,13 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
-                    className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    className="group flex items-center gap-2 px-3 py-2 hover:bg-muted transition-colors"
                   >
-                    <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
                     <span className="text-sm truncate flex-1">{source.title}</span>
                     <button
                       onClick={() => deleteSource.mutate(source.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
                       data-testid={`button-delete-source-${source.id}`}
                     >
                       <Trash2 className="w-3 h-3" />
@@ -162,49 +160,49 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
             onClick={() => setShowAddModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-md p-6"
+              className="bg-card border border-border w-full max-w-md p-5"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Add Source</h3>
+                <h3 className="font-medium">Add Source</h3>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="p-1 rounded-lg hover:bg-muted transition-colors"
+                  className="p-1 hover:bg-muted transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => setAddType("text")}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border transition-all text-sm ${
                     addType === "text"
-                      ? "bg-accent/10 border-accent text-accent"
-                      : "bg-muted/30 border-border/50 text-muted-foreground hover:border-border"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border text-muted-foreground hover:border-foreground/20"
                   }`}
                   data-testid="button-source-type-text"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Text
                 </button>
                 <button
                   onClick={() => setAddType("url")}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border transition-all text-sm ${
                     addType === "url"
-                      ? "bg-accent/10 border-accent text-accent"
-                      : "bg-muted/30 border-border/50 text-muted-foreground hover:border-border"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border text-muted-foreground hover:border-foreground/20"
                   }`}
                   data-testid="button-source-type-url"
                 >
-                  <LinkIcon className="w-4 h-4" />
+                  <LinkIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
                   URL
                 </button>
               </div>
@@ -215,7 +213,7 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Source title"
-                  className="w-full px-4 py-2.5 bg-muted border border-border/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  className="w-full px-3 py-2 bg-background border border-border text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20"
                   data-testid="input-source-title"
                 />
                 
@@ -225,7 +223,7 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://example.com/article"
-                    className="w-full px-4 py-2.5 bg-muted border border-border/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+                    className="w-full px-3 py-2 bg-background border border-border text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20"
                     data-testid="input-source-url"
                   />
                 ) : (
@@ -234,13 +232,13 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Paste your text content here..."
                     rows={6}
-                    className="w-full px-4 py-2.5 bg-muted border border-border/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+                    className="w-full px-3 py-2 bg-background border border-border text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 resize-none"
                     data-testid="input-source-content"
                   />
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 mt-6">
+              <div className="flex justify-end gap-2 mt-5">
                 <Button
                   variant="outline"
                   onClick={() => setShowAddModal(false)}
@@ -258,7 +256,7 @@ export function SourcesPanel({ notebookId }: SourcesPanelProps) {
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  Add Source
+                  Add
                 </Button>
               </div>
             </motion.div>

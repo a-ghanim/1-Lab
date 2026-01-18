@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Atom, Sparkles, BookOpen, Brain, Zap, ArrowRight, Play } from "lucide-react";
+import { FileText, MessageSquare, BookOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Landing() {
@@ -8,17 +8,10 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] animate-float" />
-        <div className="absolute bottom-[-10%] right-[5%] w-[400px] h-[400px] bg-accent/5 rounded-full blur-[100px] animate-float-delayed" />
-      </div>
-
-      <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            <Atom className="w-5 h-5 text-primary" />
-          </div>
+    <div className="min-h-screen bg-background text-foreground overflow-hidden dot-grid">
+      <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-6 border-b border-border bg-background">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-primary" />
           <span className="font-semibold text-lg">One Breath Lab</span>
         </div>
 
@@ -31,151 +24,113 @@ export default function Landing() {
         </Button>
       </header>
 
-      <main className="relative z-10 px-6 md:px-12 lg:px-20 pt-16 md:pt-24 lg:pt-32 pb-20">
-        <div className="max-w-5xl mx-auto">
+      <main className="relative z-10 px-6 md:px-12 lg:px-20 pt-20 md:pt-28 lg:pt-36 pb-20">
+        <div className="max-w-4xl">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center space-y-6 mb-16"
+            transition={{ duration: 0.5 }}
+            className="space-y-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground mb-4">
-              <Sparkles className="w-4 h-4 text-primary" />
-              AI-Powered Learning
-            </div>
-
-            <h1 className="section-title !text-5xl md:!text-6xl lg:!text-7xl">
-              Spawn a school
-              <br />
-              <span className="gradient-text">from a prompt.</span>
-            </h1>
-
-            <p className="section-subtitle mx-auto">
-              Upload documents, ask questions, and get AI-powered insights.
-              Your personal research assistant that learns from your sources.
+            <p className="text-sm text-muted-foreground tracking-wide">
+              research assistant
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium leading-tight tracking-tight">
+              your documents,
+              <br />
+              understand them deeply,
+              <br />
+              learn from AI insights.
+            </h1>
+
+            <p className="text-lg text-muted-foreground max-w-xl">
+              Upload your research papers, notes, and documents. Chat with AI that understands your sources and generates study materials.
+            </p>
+
+            <div className="pt-4">
               <Button 
                 onClick={handleLogin}
-                size="lg"
-                className="btn-primary text-base px-8 py-4 h-auto group"
+                className="btn-primary text-base px-6 py-3 h-auto"
                 data-testid="button-get-started"
               >
-                Get started free
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                get started
               </Button>
-              <Button 
-                variant="outline"
-                size="lg"
-                className="btn-secondary text-base px-8 py-4 h-auto"
-                data-testid="button-watch-demo"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Watch demo
-              </Button>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 60 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative rounded-2xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm"
-          >
-            <div className="aspect-video bg-gradient-to-br from-muted to-card flex items-center justify-center">
-              <div className="text-center space-y-4 p-8">
-                <div className="inline-flex p-4 rounded-2xl bg-primary/10 glow-cream">
-                  <Atom className="w-12 h-12 text-primary animate-pulse-soft" />
-                </div>
-                <p className="text-lg text-muted-foreground">Interactive demo coming soon</p>
-              </div>
             </div>
           </motion.div>
         </div>
 
-        <section className="max-w-6xl mx-auto mt-32">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h2 className="section-title !text-3xl md:!text-4xl mb-4">
-              Learn anything, your way
-            </h2>
-            <p className="section-subtitle mx-auto">
-              Our AI adapts to your learning style and pace
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Brain,
-                title: "AI Chat",
-                description: "Have intelligent conversations grounded in your documents and sources"
-              },
-              {
-                icon: Zap,
-                title: "Instant Insights",
-                description: "Get summaries, key takeaways, and study guides from any document"
-              },
-              {
-                icon: BookOpen,
-                title: "Smart Sources",
-                description: "Upload PDFs, paste text, or add URLs to build your knowledge base"
-              }
-            ].map((feature, idx) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="p-6 rounded-2xl bg-card border border-border/50 card-hover"
-              >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-              </motion.div>
-            ))}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-24 max-w-5xl"
+        >
+          <div className="bg-card border border-border p-8 md:p-12">
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  icon: FileText,
+                  title: "Upload Sources",
+                  description: "Add documents, paste text, or import URLs to build your research base"
+                },
+                {
+                  icon: MessageSquare,
+                  title: "Chat with AI",
+                  description: "Ask questions and get answers grounded in your uploaded sources"
+                },
+                {
+                  icon: BookOpen,
+                  title: "Generate Courses",
+                  description: "Create structured learning paths from any topic with AI"
+                }
+              ].map((feature, idx) => (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
+                  className="space-y-3"
+                >
+                  <feature.icon className="w-5 h-5 text-foreground" strokeWidth={1.5} />
+                  <h3 className="text-base font-medium">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </section>
+        </motion.div>
 
         <motion.section
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto mt-32 text-center"
+          transition={{ duration: 0.5 }}
+          className="mt-32 max-w-2xl"
         >
-          <div className="p-12 rounded-3xl bg-gradient-to-br from-primary/10 via-card to-accent/5 border border-border/50">
-            <h2 className="section-title !text-3xl md:!text-4xl mb-4">
+          <div className="space-y-6">
+            <h2 className="text-2xl md:text-3xl font-medium">
               Ready to start learning?
             </h2>
-            <p className="section-subtitle mx-auto mb-8">
-              Join thousands of learners exploring new subjects with AI
+            <p className="text-muted-foreground">
+              Join researchers and learners using AI to understand their documents faster.
             </p>
             <Button 
               onClick={handleLogin}
-              size="lg"
-              className="btn-primary text-base px-8 py-4 h-auto"
+              className="btn-primary"
               data-testid="button-signup-cta"
             >
-              Create free account
+              Create account
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </motion.section>
       </main>
 
-      <footer className="relative z-10 border-t border-border/50 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} One Breath Lab. Learn at the speed of thought.</p>
+      <footer className="relative z-10 border-t border-border py-8 bg-background">
+        <div className="max-w-7xl mx-auto px-6 text-sm text-muted-foreground">
+          <p>&copy; {new Date().getFullYear()} One Breath Lab</p>
         </div>
       </footer>
     </div>

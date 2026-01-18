@@ -86,10 +86,10 @@ export function NotebookChat({ notebookId }: NotebookChatProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+    <div className="flex flex-col h-full bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-accent" />
+          <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
           <span className="font-medium text-sm">AI Assistant</span>
         </div>
         {messages.length > 0 && (
@@ -112,14 +112,12 @@ export function NotebookChat({ notebookId }: NotebookChatProps) {
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-12">
-            <div className="p-3 rounded-full bg-accent/10 w-fit mx-auto mb-3">
-              <Bot className="w-6 h-6 text-accent" />
-            </div>
+            <Bot className="w-5 h-5 mx-auto mb-3 text-muted-foreground" strokeWidth={1.5} />
             <p className="text-muted-foreground text-sm">
               Ask questions about your sources
             </p>
             <p className="text-muted-foreground/60 text-xs mt-1">
-              I'll answer based on your uploaded documents
+              I'll answer based on your documents
             </p>
           </div>
         ) : (
@@ -133,12 +131,12 @@ export function NotebookChat({ notebookId }: NotebookChatProps) {
                 className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="p-2 rounded-full bg-accent/10 h-fit shrink-0">
-                    <Bot className="w-4 h-4 text-accent" />
+                  <div className="p-1.5 bg-muted h-fit shrink-0">
+                    <Bot className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm ${
+                  className={`max-w-[80%] px-3 py-2 text-sm ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted"
@@ -151,8 +149,8 @@ export function NotebookChat({ notebookId }: NotebookChatProps) {
                   )}
                 </div>
                 {msg.role === "user" && (
-                  <div className="p-2 rounded-full bg-primary/10 h-fit shrink-0">
-                    <User className="w-4 h-4 text-primary" />
+                  <div className="p-1.5 bg-primary/10 h-fit shrink-0">
+                    <User className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
                 )}
               </motion.div>
@@ -162,14 +160,14 @@ export function NotebookChat({ notebookId }: NotebookChatProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t border-border/50">
+      <form onSubmit={handleSubmit} className="p-3 border-t border-border">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your sources..."
-            className="flex-1 px-4 py-2.5 bg-muted border border-border/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 placeholder:text-muted-foreground"
+            className="flex-1 px-3 py-2 bg-background border border-border text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 placeholder:text-muted-foreground"
             disabled={sendMessage.isPending}
             data-testid="input-chat-message"
           />
@@ -177,7 +175,7 @@ export function NotebookChat({ notebookId }: NotebookChatProps) {
             type="submit"
             size="icon"
             disabled={!input.trim() || sendMessage.isPending}
-            className="rounded-xl"
+            className="h-9 w-9"
             data-testid="button-send-message"
           >
             {sendMessage.isPending ? (
