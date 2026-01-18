@@ -223,27 +223,56 @@ export default function Settings() {
                 </Button>
               </div>
 
+              <section className="p-5 bg-card border border-border">
+                <h2 className="font-medium mb-4">Account</h2>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm">Sign out</p>
+                    <p className="text-xs text-muted-foreground">
+                      Log out of your account
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => logout()}
+                    className="gap-2"
+                    data-testid="button-sign-out"
+                  >
+                    <LogOut className="w-4 h-4" strokeWidth={1.5} />
+                    Sign out
+                  </Button>
+                </div>
+              </section>
+
               <section className="p-5 bg-card border border-destructive/30">
                 <h2 className="font-medium mb-4 text-destructive">Danger Zone</h2>
                 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm">Sign out</p>
-                      <p className="text-xs text-muted-foreground">
-                        Log out of your account
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => logout()}
-                      className="gap-2"
-                      data-testid="button-sign-out"
-                    >
-                      <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                      Sign out
-                    </Button>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm">Clear all data</p>
+                    <p className="text-xs text-muted-foreground">
+                      Delete all your courses, progress, and learning history
+                    </p>
                   </div>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm("Are you sure? This will permanently delete all your courses, progress, and learning data. This cannot be undone.")) {
+                        fetch("/api/user/clear-data", {
+                          method: "DELETE",
+                          credentials: "include"
+                        }).then(() => {
+                          window.location.href = "/dashboard";
+                        });
+                      }
+                    }}
+                    className="gap-2"
+                    data-testid="button-clear-data"
+                  >
+                    <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                    Clear data
+                  </Button>
                 </div>
               </section>
             </div>

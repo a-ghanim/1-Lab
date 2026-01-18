@@ -802,6 +802,17 @@ USER QUESTION: ${message}`;
     }
   });
 
+  app.delete("/api/user/clear-data", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as { claims: { sub: string } };
+      await storage.clearUserData(user.claims.sub);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Clear data error:", error);
+      res.status(500).json({ error: "Failed to clear user data" });
+    }
+  });
+
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", aiConfigured: !!GEMINI_API_KEY });
   });

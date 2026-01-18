@@ -34,7 +34,7 @@ import {
   type InsertChatMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sum, count, sql, isNotNull } from "drizzle-orm";
+import { eq, and, desc, sum, count, sql, isNotNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (handled by auth module)
@@ -97,6 +97,9 @@ export interface IStorage {
   getChatMessages(notebookId: string): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   clearChatHistory(notebookId: string): Promise<void>;
+  
+  // User data management
+  clearUserData(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -397,6 +400,49 @@ export class DatabaseStorage implements IStorage {
 
   async clearChatHistory(notebookId: string): Promise<void> {
     await db.delete(chatMessages).where(eq(chatMessages.notebookId, notebookId));
+  }
+
+  async clearUserData(userId: string): Promise<void> {
+    // Get all user's courses first
+    const userCourses = await db.select().from(courses).where(eq(courses.userId, userId));
+    const courseIds = userCourses.map(c => c.id);
+
+    // Delete related data in order (respecting foreign keys)
+    if (courseIds.length > 0) {
+      // Delete quizzes for all modules of user's courses
+      const userModules = await db.select().from(modules).where(inArray(modules.courseId, courseIds));
+      const moduleIds = userModules.map(m => m.id);
+      
+      if (moduleIds.length > 0) {
+        await db.delete(quizzes).where(inArray(quizzes.moduleId, moduleIds));
+        await db.delete(resources).where(inArray(resources.moduleId, moduleIds));
+      }
+      
+      // Delete modules
+      await db.delete(modules).where(inArray(modules.courseId, courseIds));
+      
+      // Delete progress
+      await db.delete(progress).where(eq(progress.userId, userId));
+      
+      // Delete courses
+      await db.delete(courses).where(eq(courses.userId, userId));
+    }
+
+    // Delete chat messages and sources
+    await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
+    await db.delete(sources).where(eq(sources.userId, userId));
+    
+    // Delete study sessions
+    await db.delete(studySessions).where(eq(studySessions.userId, userId));
+    
+    // Delete streaks
+    await db.delete(streaks).where(eq(streaks.userId, userId));
+    
+    // Delete uploads
+    await db.delete(uploads).where(eq(uploads.userId, userId));
+    
+    // Delete learner profile
+    await db.delete(learnerProfiles).where(eq(learnerProfiles.userId, userId));
   }
 }
 
