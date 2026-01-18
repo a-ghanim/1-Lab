@@ -17,12 +17,11 @@ export interface StreamProgress {
 
 export async function generateSimulation(
   concept: string, 
-  apiKey: string | null,
   onProgress?: (progress: StreamProgress) => void
 ): Promise<GeneratedContent> {
   const lowerConcept = concept.toLowerCase();
   
-  // Check for hardcoded examples first (fast & reliable)
+  // Check for hardcoded examples first (fast & reliable demo mode)
   if (lowerConcept.includes('black hole') || lowerConcept.includes('gravity well')) {
     return {
       sketch: BLACK_HOLE_SKETCH,
@@ -92,19 +91,19 @@ export async function generateSimulation(
     };
   }
 
-  // Use streaming POST endpoint if key is provided
-  if (apiKey && onProgress) {
+  // Use streaming endpoint with server-side API key
+  if (onProgress) {
     return new Promise((resolve, reject) => {
-      // Use fetch with streaming for secure POST (API key in body, not URL)
       fetch('/api/generate-stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ concept, apiKey }),
+        body: JSON.stringify({ concept }),
       }).then(async (response) => {
         if (!response.ok) {
-          throw new Error('Failed to connect to generation service');
+          const error = await response.json().catch(() => ({ error: 'Generation failed' }));
+          throw new Error(error.error || 'Failed to connect to generation service');
         }
         
         const reader = response.body?.getReader();
@@ -124,7 +123,7 @@ export async function generateSimulation(
           
           // Parse SSE messages from buffer
           const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          buffer = lines.pop() || '';
           
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -156,49 +155,25 @@ export async function generateSimulation(
     });
   }
   
-  // Use server-side Gemini API if key is provided (fallback without streaming)
-  if (apiKey) {
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ concept, apiKey }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Generation failed');
-      }
-      
-      return await response.json();
-      
-    } catch (err) {
-      console.error("Generation Failed:", err);
-      throw err;
+  // Non-streaming fallback
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ concept }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Generation failed');
     }
+    
+    return await response.json();
+    
+  } catch (err) {
+    console.error("Generation Failed:", err);
+    throw err;
   }
-
-  // Fallback to generic simulation
-  return {
-    sketch: GENERIC_SKETCH,
-    questions: [
-      {
-        question: "Why are you seeing this generic simulation?",
-        options: ["The concept was too abstract", "No API Key provided", "AI is sleeping", "This is a feature"],
-        answer: "No API Key provided"
-      },
-      {
-        question: "How can you get a specific simulation for '" + concept + "'?",
-        options: ["Try 'Black Hole'", "Try 'Photosynthesis'", "Add a Gemini API Key in settings", "All of the above"],
-        answer: "All of the above"
-      },
-      {
-        question: "What library powers these graphics?",
-        options: ["Three.js", "p5.js", "D3.js", "Pixi.js"],
-        answer: "p5.js"
-      }
-    ]
-  };
 }

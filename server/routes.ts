@@ -1,12 +1,57 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { isAuthenticated } from "./replit_integrations/auth";
 
-const SYSTEM_PROMPT = `You are an expert p5.js Creative Coder and Science Educator.
-Your goal is to generate interactive educational simulations.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-Output Format: Valid JSON only, no markdown code blocks, no explanation.
+function getGeminiModel(useProModel = false) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY not configured");
+  }
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  const modelName = useProModel ? "gemini-2.5-pro" : "gemini-2.5-flash";
+  return genAI.getGenerativeModel({ model: modelName });
+}
+
+const CURRICULUM_PROMPT = `You are an expert curriculum designer and educator. Generate a complete course curriculum based on the user's topic.
+
+Output Format: Valid JSON only, no markdown code blocks.
+{
+  "title": "Course title (concise, engaging)",
+  "description": "2-3 sentence course description",
+  "estimatedHours": number (total hours to complete),
+  "modules": [
+    {
+      "title": "Module title",
+      "description": "Brief module description",
+      "order": 1,
+      "estimatedMinutes": 30,
+      "content": { "overview": "Module overview text" },
+      "simulationCode": "// p5.js instance mode code for interactive visualization (use 'p' as instance)",
+      "quizzes": [
+        { "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why A is correct" }
+      ],
+      "resources": [
+        { "type": "article|paper|video|book", "title": "Resource title", "author": "Author name", "url": "URL if available", "summary": "Brief summary" }
+      ]
+    }
+  ]
+}
+
+Rules:
+1. Create 4-6 modules with progressive difficulty
+2. Each module should have 1-2 quizzes and 2-3 resources
+3. Simulation code must be valid p5.js instance mode (use 'p' as variable)
+4. Resources should be real, educational content when possible
+5. Make simulations interactive and visually engaging
+6. Canvas size: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)`;
+
+const SIMULATION_PROMPT = `You are an expert p5.js Creative Coder and Science Educator.
+Generate an interactive educational simulation.
+
+Output Format: Valid JSON only, no markdown code blocks.
 {
   "sketch": "// p5.js instance mode code here",
   "questions": [
@@ -23,19 +68,237 @@ Sketch Rules:
 4. Keep it visual, beautiful, and educational.
 5. Canvas size: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)
 6. Include visual labels or annotations where helpful.
-7. Use vibrant colors that work on dark backgrounds.
-8. The code must be a string that can be passed to new Function('p', code).`;
+7. Use vibrant colors that work on dark backgrounds.`;
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
-  // Streaming POST endpoint - API key sent securely in body
+
+  // Profile endpoints
+  app.get("/api/profile", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const profile = await storage.getLearnerProfile(user.claims.sub);
+      res.json(profile || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  app.post("/api/profile", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { level, learningStyle, goals, weeklyHours } = req.body;
+      
+      const profile = await storage.upsertLearnerProfile({
+        userId: user.claims.sub,
+        level: level || "beginner",
+        learningStyle: learningStyle || "visual",
+        goals: goals || [],
+        weeklyHours: weeklyHours || 5,
+      });
+      
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save profile" });
+    }
+  });
+
+  // Course endpoints
+  app.get("/api/courses", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const courses = await storage.getCoursesByUser(user.claims.sub);
+      res.json(courses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch courses" });
+    }
+  });
+
+  app.get("/api/courses/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const course = await storage.getCourse(req.params.id);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      res.json(course);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch course" });
+    }
+  });
+
+  app.get("/api/courses/:id/modules", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const modules = await storage.getModulesByCourse(req.params.id);
+      res.json(modules);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch modules" });
+    }
+  });
+
+  app.post("/api/courses/generate", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { prompt } = req.body;
+      
+      if (!prompt || typeof prompt !== "string") {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+      
+      if (!GEMINI_API_KEY) {
+        return res.status(500).json({ error: "AI service not configured" });
+      }
+      
+      const model = getGeminiModel(true);
+      
+      const result = await model.generateContent([
+        CURRICULUM_PROMPT,
+        `Create a complete curriculum for the topic: "${prompt}". 
+        
+Make it engaging, progressive, and include interactive p5.js simulations.
+Return ONLY valid JSON, no markdown.`
+      ]);
+
+      const content = result.response.text();
+      if (!content) {
+        return res.status(500).json({ error: "No content generated" });
+      }
+      
+      let jsonStr = content
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      
+      let curriculum;
+      try {
+        curriculum = JSON.parse(jsonStr);
+      } catch (parseError) {
+        console.error("JSON Parse Error:", parseError);
+        return res.status(500).json({ error: "Failed to parse AI response" });
+      }
+      
+      // Create course
+      const course = await storage.createCourse({
+        userId: user.claims.sub,
+        title: curriculum.title || prompt,
+        description: curriculum.description || "",
+        prompt: prompt,
+        curriculum: curriculum,
+        totalModules: curriculum.modules?.length || 0,
+        estimatedHours: curriculum.estimatedHours || 0,
+      });
+      
+      // Create modules
+      if (curriculum.modules && Array.isArray(curriculum.modules)) {
+        for (const moduleData of curriculum.modules) {
+          const module = await storage.createModule({
+            courseId: course.id,
+            title: moduleData.title || "Untitled Module",
+            description: moduleData.description || "",
+            order: moduleData.order || 1,
+            content: moduleData.content || {},
+            simulationCode: moduleData.simulationCode || null,
+            estimatedMinutes: moduleData.estimatedMinutes || 30,
+          });
+          
+          // Create quizzes for module
+          if (moduleData.quizzes && Array.isArray(moduleData.quizzes)) {
+            for (let i = 0; i < moduleData.quizzes.length; i++) {
+              const quiz = moduleData.quizzes[i];
+              await storage.createQuiz({
+                moduleId: module.id,
+                question: quiz.question || "",
+                options: quiz.options || [],
+                correctAnswer: quiz.correctAnswer || "",
+                explanation: quiz.explanation || "",
+                order: i + 1,
+              });
+            }
+          }
+          
+          // Create resources for module
+          if (moduleData.resources && Array.isArray(moduleData.resources)) {
+            for (const resource of moduleData.resources) {
+              await storage.createResource({
+                courseId: course.id,
+                moduleId: module.id,
+                type: resource.type || "article",
+                title: resource.title || "Untitled Resource",
+                author: resource.author || null,
+                url: resource.url || null,
+                summary: resource.summary || null,
+              });
+            }
+          }
+        }
+      }
+      
+      res.json(course);
+      
+    } catch (error: any) {
+      console.error("Course generation error:", error);
+      res.status(500).json({ error: error.message || "Failed to generate course" });
+    }
+  });
+
+  // Module endpoints
+  app.get("/api/modules/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const module = await storage.getModule(req.params.id);
+      if (!module) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      res.json(module);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch module" });
+    }
+  });
+
+  app.get("/api/modules/:id/quizzes", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const quizzes = await storage.getQuizzesByModule(req.params.id);
+      res.json(quizzes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quizzes" });
+    }
+  });
+
+  app.get("/api/modules/:id/resources", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const resources = await storage.getResourcesByModule(req.params.id);
+      res.json(resources);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch resources" });
+    }
+  });
+
+  // Streak endpoints
+  app.get("/api/streak", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const streak = await storage.getStreak(user.claims.sub);
+      res.json(streak || { currentStreak: 0, longestStreak: 0 });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch streak" });
+    }
+  });
+
+  app.post("/api/streak/update", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      await storage.updateStreak(user.claims.sub);
+      const streak = await storage.getStreak(user.claims.sub);
+      res.json(streak);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update streak" });
+    }
+  });
+
+  // Original simulation endpoints
   app.post("/api/generate-stream", async (req, res) => {
-    const { concept, apiKey } = req.body;
+    const { concept } = req.body;
     
-    // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -51,114 +314,87 @@ export async function registerRoutes(
       return;
     }
     
-    if (!apiKey) {
-      sendEvent('error', { message: 'API key is required for custom generation' });
+    if (!GEMINI_API_KEY) {
+      sendEvent('error', { message: 'AI service not configured' });
       res.end();
       return;
     }
     
     try {
-      // Step 1: Connecting to AI
-      sendEvent('progress', { step: 1, total: 4, message: 'Connecting to Gemini AI...' });
+      sendEvent('progress', { step: 1, total: 4, message: 'Connecting to AI...' });
       
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = getGeminiModel();
       
-      // Step 2: Generating simulation
       sendEvent('progress', { step: 2, total: 4, message: `Generating ${concept} simulation...` });
       
       const result = await model.generateContent([
-        SYSTEM_PROMPT,
-        `Create an interactive p5.js simulation for the concept: "${concept}". 
-        
-The simulation should visually demonstrate the key principles of ${concept}.
-Include mouse interactivity or animation to make it engaging.
-Generate 3 educational multiple-choice questions about ${concept}.
-
-Return ONLY valid JSON, no markdown.`
+        SIMULATION_PROMPT,
+        `Create an interactive p5.js simulation for: "${concept}". Return ONLY valid JSON.`
       ]);
 
-      // Step 3: Processing response
-      sendEvent('progress', { step: 3, total: 4, message: 'Processing AI response...' });
+      sendEvent('progress', { step: 3, total: 4, message: 'Processing response...' });
       
       const content = result.response.text();
       if (!content) {
-        sendEvent('error', { message: 'No content generated from AI' });
+        sendEvent('error', { message: 'No content generated' });
         res.end();
         return;
       }
       
-      // Clean up the response
       let jsonStr = content
         .replace(/```json\s*/gi, '')
         .replace(/```\s*/g, '')
         .trim();
       
-      // Step 4: Finalizing
-      sendEvent('progress', { step: 4, total: 4, message: 'Building interactive simulation...' });
+      sendEvent('progress', { step: 4, total: 4, message: 'Building simulation...' });
       
       try {
         const parsed = JSON.parse(jsonStr);
         
         if (!parsed.sketch || !Array.isArray(parsed.questions)) {
-          sendEvent('error', { message: 'Invalid response structure from AI' });
+          sendEvent('error', { message: 'Invalid response structure' });
           res.end();
           return;
         }
         
-        // Success!
         sendEvent('complete', { data: parsed });
         res.end();
         
       } catch (parseError) {
         console.error("JSON Parse Error:", parseError);
-        console.error("Raw content:", content);
-        sendEvent('error', { message: 'Failed to parse AI response' });
+        sendEvent('error', { message: 'Failed to parse response' });
         res.end();
       }
       
     } catch (error: any) {
       console.error("Generation error:", error);
-      
-      if (error.message?.includes("API_KEY_INVALID")) {
-        sendEvent('error', { message: 'Invalid Gemini API key' });
-      } else {
-        sendEvent('error', { message: error.message || 'Failed to generate simulation' });
-      }
+      sendEvent('error', { message: error.message || 'Generation failed' });
       res.end();
     }
   });
 
-  // Keep the original POST endpoint for backward compatibility
   app.post("/api/generate", async (req, res) => {
     try {
-      const { concept, apiKey } = req.body;
+      const { concept } = req.body;
       
       if (!concept || typeof concept !== "string") {
         return res.status(400).json({ error: "Concept is required" });
       }
       
-      if (!apiKey || typeof apiKey !== "string") {
-        return res.status(400).json({ error: "API key is required for custom generation" });
+      if (!GEMINI_API_KEY) {
+        return res.status(500).json({ error: "AI service not configured" });
       }
       
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = getGeminiModel();
 
       const result = await model.generateContent([
-        SYSTEM_PROMPT,
-        `Create an interactive p5.js simulation for the concept: "${concept}". 
-        
-The simulation should visually demonstrate the key principles of ${concept}.
-Include mouse interactivity or animation to make it engaging.
-Generate 3 educational multiple-choice questions about ${concept}.
-
-Return ONLY valid JSON, no markdown.`
+        SIMULATION_PROMPT,
+        `Create an interactive p5.js simulation for: "${concept}". Return ONLY valid JSON.`
       ]);
 
       const content = result.response.text();
       if (!content) {
-        return res.status(500).json({ error: "No content generated from AI" });
+        return res.status(500).json({ error: "No content generated" });
       }
       
       let jsonStr = content
@@ -170,27 +406,23 @@ Return ONLY valid JSON, no markdown.`
         const parsed = JSON.parse(jsonStr);
         
         if (!parsed.sketch || !Array.isArray(parsed.questions)) {
-          return res.status(500).json({ error: "Invalid response structure from AI" });
+          return res.status(500).json({ error: "Invalid response structure" });
         }
         
         return res.json(parsed);
       } catch (parseError) {
         console.error("JSON Parse Error:", parseError);
-        console.error("Raw content:", content);
-        return res.status(500).json({ error: "Failed to parse AI response as JSON" });
+        return res.status(500).json({ error: "Failed to parse response" });
       }
       
     } catch (error: any) {
       console.error("Generation error:", error);
-      
-      if (error.message?.includes("API_KEY_INVALID")) {
-        return res.status(401).json({ error: "Invalid Gemini API key" });
-      }
-      
-      return res.status(500).json({ 
-        error: error.message || "Failed to generate simulation" 
-      });
+      return res.status(500).json({ error: error.message || "Generation failed" });
     }
+  });
+
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", aiConfigured: !!GEMINI_API_KEY });
   });
 
   return httpServer;

@@ -42,7 +42,6 @@ export default function Home() {
   const [concept, setConcept] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<GeneratedContent | null>(null);
-  const [apiKey, setApiKey] = useState("");
   const [showCode, setShowCode] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
@@ -89,7 +88,7 @@ export default function Home() {
     setProgress(null);
     
     try {
-      const data = await generateSimulation(term, apiKey || null, (prog) => {
+      const data = await generateSimulation(term, (prog: StreamProgress) => {
         setProgress(prog);
       });
       setResult(data);
@@ -165,39 +164,6 @@ export default function Home() {
             </div>
           </div>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-3 glass rounded-xl hover:ring-1 hover:ring-white/20 transition-all"
-              >
-                <Settings className="w-5 h-5 text-muted-foreground" />
-              </motion.button>
-            </DialogTrigger>
-            <DialogContent className="glass-strong border-white/10 max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-display">Lab Settings</DialogTitle>
-                <DialogDescription className="text-muted-foreground">Configure your simulation generator</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Gemini API Key</Label>
-                  <Input 
-                    type="password" 
-                    placeholder="AIza..." 
-                    value={apiKey} 
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary"
-                  />
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Without a key, the lab runs in <span className="text-primary">Demo Mode</span> with curated simulations. 
-                    Add your <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Gemini API key</a> to generate any concept.
-                  </p>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         </motion.header>
 
         {/* Hero Section */}
