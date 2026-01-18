@@ -8,13 +8,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Sparkles,
   BookOpen,
   ArrowRight,
   Loader2,
   Plus,
   X
 } from "lucide-react";
+import { GenerateButton } from "@/components/GenerateButton";
+import { FluidBackground } from "@/components/FluidBackground";
 import type { Course } from "@shared/schema";
 
 export default function Dashboard() {
@@ -122,7 +123,8 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-background">
+      <FluidBackground />
+      <div className="min-h-screen relative z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -186,24 +188,11 @@ export default function Dashboard() {
                         autoFocus
                         data-testid="input-course-prompt"
                       />
-                      <Button
+                      <GenerateButton
                         onClick={generateCourse}
                         disabled={!prompt.trim() || isGenerating}
-                        className="btn-primary h-10 px-4 gap-2"
-                        data-testid="button-generate-course"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4" strokeWidth={1.5} />
-                            Generate
-                          </>
-                        )}
-                      </Button>
+                        isGenerating={isGenerating}
+                      />
                     </div>
 
                     <AnimatePresence>
@@ -243,30 +232,49 @@ export default function Dashboard() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border border-border">
-                  {courses.map((course) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {courses.map((course, idx) => (
                     <motion.div
                       key={course.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      whileHover={{ backgroundColor: "hsl(0 0% 98%)" }}
-                      className="group cursor-pointer bg-card"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                      className="group cursor-pointer"
                       onClick={() => navigate(`/courses/${course.id}`)}
                       data-testid={`card-course-${course.id}`}
                     >
-                      <div className="p-5 h-full">
-                        <div className="flex items-start justify-between mb-3">
-                          <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                          <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                        </div>
+                      <div className="relative p-5 h-full bg-card/80 backdrop-blur-sm border border-border overflow-hidden transition-all duration-300 group-hover:border-foreground/20 group-hover:shadow-lg group-hover:shadow-foreground/5">
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-br from-foreground/[0.02] to-transparent"
+                          initial={{ opacity: 0 }}
+                          whileHover={{ opacity: 1 }}
+                        />
+                        
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between mb-3">
+                            <motion.div
+                              whileHover={{ rotate: 5 }}
+                              transition={{ type: "spring", stiffness: 400 }}
+                            >
+                              <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                            </motion.div>
+                            <motion.div
+                              initial={{ x: -5, opacity: 0 }}
+                              whileHover={{ x: 0, opacity: 1 }}
+                            >
+                              <ArrowRight className="w-4 h-4 text-foreground" />
+                            </motion.div>
+                          </div>
 
-                        <h3 className="font-medium mb-1.5 line-clamp-2 leading-snug">{course.title}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
-                          {course.description || "No description"}
-                        </p>
+                          <h3 className="font-medium mb-1.5 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">{course.title}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+                            {course.description || "No description"}
+                          </p>
 
-                        <div className="text-xs text-muted-foreground">
-                          {course.totalModules || 0} modules · {course.estimatedHours || 0}h
+                          <div className="text-xs text-muted-foreground">
+                            {course.totalModules || 0} modules · {course.estimatedHours || 0}h
+                          </div>
                         </div>
                       </div>
                     </motion.div>
