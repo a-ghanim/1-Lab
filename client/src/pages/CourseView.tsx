@@ -6,6 +6,7 @@ import { Layout } from "@/components/Layout";
 import { FocusTimer } from "@/components/FocusTimer";
 import { NotebookChat } from "@/components/NotebookChat";
 import { SourcesPanel } from "@/components/SourcesPanel";
+import { GeneratingLoader } from "@/components/GeneratingLoader";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -390,11 +391,8 @@ export default function CourseView() {
                     className="space-y-6"
                   >
                     <div className="p-12 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
-                      <div className="relative mb-8">
-                        <div className="absolute inset-0 bg-accent/20 rounded-full blur-2xl animate-pulse" />
-                        <div className="relative p-6 rounded-full bg-accent/10">
-                          <Sparkles className="w-12 h-12 text-accent animate-pulse" />
-                        </div>
+                      <div className="mb-8">
+                        <GeneratingLoader size="lg" />
                       </div>
                       <h3 className="text-2xl font-semibold mb-3">Creating your course...</h3>
                       <p className="text-muted-foreground max-w-lg mb-6">
@@ -434,11 +432,8 @@ export default function CourseView() {
                       /* Loading Skeleton Cards */
                       <div className="space-y-6">
                         <div className="p-8 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
-                          <div className="relative mb-6">
-                            <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl animate-pulse" />
-                            <div className="relative p-4 rounded-full bg-accent/10">
-                              <Sparkles className="w-8 h-8 text-accent animate-pulse" />
-                            </div>
+                          <div className="mb-6">
+                            <GeneratingLoader size="sm" />
                           </div>
                           <h3 className="text-lg font-semibold mb-2">Generating lesson content...</h3>
                           <p className="text-sm text-muted-foreground max-w-md">
