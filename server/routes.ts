@@ -48,6 +48,46 @@ Rules:
 5. Make simulations interactive and visually engaging
 6. Canvas size: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)`;
 
+const COURSE_OUTLINE_PROMPT = `You are an expert curriculum designer. Generate a course OUTLINE only (no content yet).
+
+Output Format: Valid JSON only, no markdown code blocks.
+{
+  "title": "Course title (concise, engaging)",
+  "description": "2-3 sentence course description",
+  "estimatedHours": number (total hours to complete),
+  "modules": [
+    { "title": "Module 1 title", "description": "Brief description", "order": 1 },
+    { "title": "Module 2 title", "description": "Brief description", "order": 2 }
+  ]
+}
+
+Rules:
+1. Create 4-6 module outlines with progressive difficulty
+2. Keep descriptions concise (1-2 sentences each)
+3. Titles should be clear and engaging`;
+
+const MODULE_CONTENT_PROMPT = `You are an expert educator. Generate COMPLETE content for a single module.
+
+Output Format: Valid JSON only, no markdown code blocks.
+{
+  "content": { "overview": "Detailed module overview (2-3 paragraphs)", "keyPoints": ["point1", "point2", "point3"] },
+  "estimatedMinutes": 30,
+  "simulationCode": "// p5.js instance mode code (use 'p' as variable)",
+  "quizzes": [
+    { "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why A is correct" }
+  ],
+  "resources": [
+    { "type": "article|paper|video|book", "title": "Resource title", "author": "Author name", "url": "URL if available", "summary": "Brief summary" }
+  ]
+}
+
+Rules:
+1. Create 1-2 quizzes that test understanding
+2. Include 2-3 relevant educational resources
+3. Simulation must be valid p5.js instance mode (use 'p' as variable)
+4. Make simulation interactive and visually engaging
+5. Canvas: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)`;
+
 const SIMULATION_PROMPT = `You are an expert p5.js Creative Coder and Science Educator.
 Generate an interactive educational simulation.
 
@@ -118,7 +158,7 @@ export async function registerRoutes(
 
   app.get("/api/courses/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const course = await storage.getCourse(req.params.id);
+      const course = await storage.getCourse(req.params.id as string);
       if (!course) {
         return res.status(404).json({ error: "Course not found" });
       }
@@ -130,7 +170,7 @@ export async function registerRoutes(
 
   app.get("/api/courses/:id/modules", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const modules = await storage.getModulesByCourse(req.params.id);
+      const modules = await storage.getModulesByCourse(req.params.id as string);
       res.json(modules);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch modules" });
@@ -242,10 +282,203 @@ Return ONLY valid JSON, no markdown.`
     }
   });
 
+  // Streaming course generation - creates outline first, then streams modules
+  app.post("/api/courses/generate-stream", isAuthenticated, async (req: Request, res: Response) => {
+    const user = req.user as any;
+    const { prompt } = req.body;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const sendEvent = (type: string, data: any) => {
+      res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
+    };
+
+    if (!prompt || typeof prompt !== "string") {
+      sendEvent('error', { message: 'Prompt is required' });
+      res.end();
+      return;
+    }
+
+    if (!GEMINI_API_KEY) {
+      sendEvent('error', { message: 'AI service not configured' });
+      res.end();
+      return;
+    }
+
+    try {
+      // Step 1: Generate course outline quickly
+      sendEvent('progress', { step: 'outline', message: 'Creating course outline...' });
+
+      const outlineModel = getGeminiModel(false); // Use flash for speed
+      const outlineResult = await outlineModel.generateContent([
+        COURSE_OUTLINE_PROMPT,
+        `Create a course outline for: "${prompt}". Return ONLY valid JSON.`
+      ]);
+
+      const outlineContent = outlineResult.response.text();
+      if (!outlineContent) {
+        sendEvent('error', { message: 'Failed to generate outline' });
+        res.end();
+        return;
+      }
+
+      let outlineJson = outlineContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      let outline;
+      try {
+        outline = JSON.parse(outlineJson);
+      } catch (e) {
+        sendEvent('error', { message: 'Failed to parse outline' });
+        res.end();
+        return;
+      }
+
+      // Step 2: Create course in database
+      const course = await storage.createCourse({
+        userId: user.claims.sub,
+        title: outline.title || prompt,
+        description: outline.description || "",
+        prompt: prompt,
+        curriculum: outline,
+        totalModules: outline.modules?.length || 0,
+        estimatedHours: outline.estimatedHours || 0,
+      });
+
+      // Create placeholder modules in database
+      const moduleRecords: any[] = [];
+      for (const mod of outline.modules || []) {
+        const moduleRecord = await storage.createModule({
+          courseId: course.id,
+          title: mod.title || "Untitled",
+          description: mod.description || "",
+          order: mod.order || 1,
+          content: { loading: true },
+          simulationCode: null,
+          estimatedMinutes: 30,
+        });
+        moduleRecords.push(moduleRecord);
+      }
+
+      // Send course created event - frontend navigates to course page now
+      sendEvent('course_created', { 
+        course, 
+        modules: moduleRecords.map(m => ({ 
+          id: m.id, 
+          title: m.title, 
+          description: m.description, 
+          order: m.order,
+          loading: true 
+        }))
+      });
+
+      // Step 3: Generate full content for each module
+      const contentModel = getGeminiModel(true); // Use pro for quality
+
+      for (let i = 0; i < moduleRecords.length; i++) {
+        const moduleRecord = moduleRecords[i];
+        const moduleOutline = outline.modules[i];
+
+        sendEvent('module_generating', { 
+          moduleId: moduleRecord.id, 
+          moduleIndex: i,
+          message: `Generating "${moduleOutline.title}"...`
+        });
+
+        try {
+          const contentResult = await contentModel.generateContent([
+            MODULE_CONTENT_PROMPT,
+            `Generate complete content for this module:
+Course: "${outline.title}"
+Module ${i + 1}: "${moduleOutline.title}"
+Description: "${moduleOutline.description}"
+
+The simulation should visualize concepts from this specific module.
+Return ONLY valid JSON.`
+          ]);
+
+          const contentText = contentResult.response.text();
+          let contentJson = contentText?.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim() || '{}';
+          
+          let content;
+          try {
+            content = JSON.parse(contentJson);
+          } catch (e) {
+            content = { content: { overview: "Content generation failed" }, simulationCode: null, quizzes: [], resources: [] };
+          }
+
+          // Update module with full content
+          await storage.updateModule(moduleRecord.id, {
+            content: content.content || {},
+            simulationCode: content.simulationCode || null,
+            estimatedMinutes: content.estimatedMinutes || 30,
+          });
+
+          // Create quizzes
+          if (content.quizzes && Array.isArray(content.quizzes)) {
+            for (let q = 0; q < content.quizzes.length; q++) {
+              const quiz = content.quizzes[q];
+              await storage.createQuiz({
+                moduleId: moduleRecord.id,
+                question: quiz.question || "",
+                options: quiz.options || [],
+                correctAnswer: quiz.correctAnswer || "",
+                explanation: quiz.explanation || "",
+                order: q + 1,
+              });
+            }
+          }
+
+          // Create resources
+          if (content.resources && Array.isArray(content.resources)) {
+            for (const resource of content.resources) {
+              await storage.createResource({
+                courseId: course.id,
+                moduleId: moduleRecord.id,
+                type: resource.type || "article",
+                title: resource.title || "Resource",
+                author: resource.author || null,
+                url: resource.url || null,
+                summary: resource.summary || null,
+              });
+            }
+          }
+
+          // Send module completed event
+          sendEvent('module_complete', {
+            moduleId: moduleRecord.id,
+            moduleIndex: i,
+            content: content.content,
+            simulationCode: content.simulationCode,
+            quizCount: content.quizzes?.length || 0,
+            resourceCount: content.resources?.length || 0,
+          });
+
+        } catch (moduleError: any) {
+          console.error(`Module ${i} generation error:`, moduleError);
+          sendEvent('module_error', { 
+            moduleId: moduleRecord.id, 
+            moduleIndex: i, 
+            message: moduleError.message 
+          });
+        }
+      }
+
+      sendEvent('complete', { courseId: course.id });
+      res.end();
+
+    } catch (error: any) {
+      console.error("Streaming course generation error:", error);
+      sendEvent('error', { message: error.message || 'Generation failed' });
+      res.end();
+    }
+  });
+
   // Module endpoints
   app.get("/api/modules/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const module = await storage.getModule(req.params.id);
+      const module = await storage.getModule(req.params.id as string);
       if (!module) {
         return res.status(404).json({ error: "Module not found" });
       }
@@ -257,7 +490,7 @@ Return ONLY valid JSON, no markdown.`
 
   app.get("/api/modules/:id/quizzes", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const quizzes = await storage.getQuizzesByModule(req.params.id);
+      const quizzes = await storage.getQuizzesByModule(req.params.id as string);
       res.json(quizzes);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch quizzes" });
@@ -266,7 +499,7 @@ Return ONLY valid JSON, no markdown.`
 
   app.get("/api/modules/:id/resources", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const resources = await storage.getResourcesByModule(req.params.id);
+      const resources = await storage.getResourcesByModule(req.params.id as string);
       res.json(resources);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch resources" });

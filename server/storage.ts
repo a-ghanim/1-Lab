@@ -45,6 +45,7 @@ export interface IStorage {
   getModule(id: string): Promise<Module | undefined>;
   getModulesByCourse(courseId: string): Promise<Module[]>;
   createModule(module: InsertModule): Promise<Module>;
+  updateModule(id: string, data: Partial<InsertModule>): Promise<Module>;
   
   // Progress
   getProgress(userId: string, courseId: string): Promise<Progress[]>;
@@ -126,6 +127,15 @@ export class DatabaseStorage implements IStorage {
 
   async createModule(module: InsertModule): Promise<Module> {
     const [result] = await db.insert(modules).values(module).returning();
+    return result;
+  }
+
+  async updateModule(id: string, data: Partial<InsertModule>): Promise<Module> {
+    const [result] = await db
+      .update(modules)
+      .set(data)
+      .where(eq(modules.id, id))
+      .returning();
     return result;
   }
 
