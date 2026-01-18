@@ -38,7 +38,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                 className="flex items-center gap-2"
               >
                 <div className="w-5 h-5 bg-primary" />
-                <span className="font-medium hidden sm:block">One Breath Lab</span>
+                <span className="font-semibold hidden sm:block" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>1Lab</span>
               </Link>
 
               <div className="flex items-center gap-2">

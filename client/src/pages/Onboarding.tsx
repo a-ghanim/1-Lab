@@ -116,10 +116,8 @@ export default function Onboarding() {
 
       <header className="relative z-10 flex items-center justify-between px-6 md:px-12 py-6">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            <Atom className="w-5 h-5 text-primary" />
-          </div>
-          <span className="font-semibold text-lg">One Breath Lab</span>
+          <div className="w-6 h-6 bg-primary" />
+          <span className="font-bold text-lg" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>1Lab</span>
         </div>
 
         <div className="flex items-center gap-2">

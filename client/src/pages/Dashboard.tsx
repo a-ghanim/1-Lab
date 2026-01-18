@@ -90,23 +90,25 @@ export default function Dashboard() {
         
         for (const line of lines) {
           if (line.startsWith("data: ")) {
+            const jsonStr = line.slice(6);
+            let event;
             try {
-              const event = JSON.parse(line.slice(6));
-              
-              if (event.type === "progress") {
-                setGenerationStep(event.message);
-              } else if (event.type === "course_created") {
-                setGenerationStep("Course created! Loading modules...");
-                queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-                setPrompt("");
-                setShowGenerator(false);
-                navigate(`/courses/${event.course.id}?streaming=true`);
-                return;
-              } else if (event.type === "error") {
-                throw new Error(event.message);
-              }
+              event = JSON.parse(jsonStr);
             } catch (e) {
-              // Ignore parse errors for incomplete chunks
+              continue;
+            }
+            
+            if (event.type === "progress") {
+              setGenerationStep(event.message);
+            } else if (event.type === "course_created" && event.course?.id) {
+              queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+              setPrompt("");
+              setShowGenerator(false);
+              setIsGenerating(false);
+              navigate(`/courses/${event.course.id}?streaming=true`);
+              return;
+            } else if (event.type === "error") {
+              throw new Error(event.message);
             }
           }
         }
