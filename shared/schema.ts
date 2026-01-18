@@ -46,6 +46,7 @@ export const modules = pgTable("modules", {
   description: text("description"),
   order: integer("order").notNull(),
   content: jsonb("content"),
+  simulationType: varchar("simulation_type").default("p5"),
   simulationCode: text("simulation_code"),
   estimatedMinutes: integer("estimated_minutes").default(30),
   createdAt: timestamp("created_at").defaultNow(),

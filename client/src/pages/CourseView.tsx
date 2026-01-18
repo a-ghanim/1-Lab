@@ -3,7 +3,7 @@ import { useRoute, useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
-import { SimulationRunner } from "@/components/SimulationRunner";
+import { UnifiedSimulation } from "@/components/UnifiedSimulation";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -13,10 +13,6 @@ import {
   CheckCircle,
   Circle,
   Clock,
-  Play,
-  Code,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   Zap,
   Check,
@@ -25,7 +21,6 @@ import {
   Link as LinkIcon,
   Sparkles
 } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Course, Module, Quiz, Resource } from "@shared/schema";
 
 export default function CourseView() {
@@ -297,30 +292,12 @@ export default function CourseView() {
                         </div>
                       )}
 
-                      {currentModule.simulationCode && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Play className="w-5 h-5 text-primary" />
-                        Interactive Simulation
-                      </h3>
-                      <SimulationRunner code={currentModule.simulationCode} />
-                      
-                      <Collapsible open={showCode} onOpenChange={setShowCode}>
-                        <CollapsibleTrigger asChild>
-                          <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                            <Code className="w-4 h-4" />
-                            {showCode ? "Hide" : "View"} source code
-                            {showCode ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <pre className="mt-4 p-4 rounded-xl bg-card border border-border/50 overflow-x-auto text-sm">
-                            <code>{currentModule.simulationCode}</code>
-                          </pre>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </div>
-                  )}
+                      <UnifiedSimulation
+                        topic={`${course?.title || ''} ${currentModule.title} ${currentModule.description || ''}`}
+                        type={(currentModule as any).simulationType || "auto"}
+                        code={currentModule.simulationCode}
+                        title={currentModule.title}
+                      />
 
                   {quizzes.length > 0 && (
                     <div className="space-y-4">

@@ -68,25 +68,54 @@ Rules:
 
 const MODULE_CONTENT_PROMPT = `You are an expert educator. Generate COMPLETE content for a single module.
 
+IMPORTANT: Choose the BEST simulation library for the topic:
+- "matter" for physics with collisions, gravity, forces, mechanics (use Matter.js)
+- "three" for 3D visualizations like molecules, astronomy, 3D geometry (use Three.js)
+- "d3" for data visualization, statistics, graphs, networks (use D3.js)
+- "p5" for general 2D animations, art, simple visualizations (use p5.js)
+
 Output Format: Valid JSON only, no markdown code blocks.
 {
   "content": { "overview": "Detailed module overview (2-3 paragraphs)", "keyPoints": ["point1", "point2", "point3"] },
   "estimatedMinutes": 30,
-  "simulationCode": "// p5.js instance mode code (use 'p' as variable)",
+  "simulationType": "matter|three|d3|p5",
+  "simulationCode": "// Code for the chosen library",
   "quizzes": [
     { "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why A is correct" }
   ],
   "resources": [
-    { "type": "article|paper|video|book", "title": "Resource title", "author": "Author name", "url": "URL if available", "summary": "Brief summary" }
+    { "type": "article|paper|video|book", "title": "Resource title", "author": "Author name", "url": "URL", "summary": "Brief summary" }
   ]
 }
 
+Library-specific code patterns:
+
+MATTER.JS (simulationType: "matter"):
+- You receive: Matter, engine, render, width, height
+- Create bodies with: Matter.Bodies.circle(x, y, radius, options)
+- Add to world: Matter.Composite.add(engine.world, [bodies])
+- Add mouse control: Matter.MouseConstraint.create(engine, {...})
+
+THREE.JS (simulationType: "three"):
+- You receive: THREE, scene, camera, renderer, width, height
+- Create meshes: new THREE.Mesh(geometry, material)
+- Add to scene: scene.add(mesh)
+- Define: function animate() { /* update objects */ }
+
+D3.JS (simulationType: "d3"):
+- You receive: d3, svg, width, height
+- Create elements: svg.append("circle").attr("cx", x)
+- Use transitions: selection.transition().duration(1000)
+
+P5.JS (simulationType: "p5"):
+- Use 'p' as instance: p.setup, p.draw, p.createCanvas
+- Canvas: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)
+
 Rules:
 1. Create 1-2 quizzes that test understanding
-2. Include 2-3 relevant educational resources
-3. Simulation must be valid p5.js instance mode (use 'p' as variable)
-4. Make simulation interactive and visually engaging
-5. Canvas: p.createCanvas(Math.min(600, p.windowWidth - 40), 400)`;
+2. Include 2-3 REAL educational resources with working URLs
+3. Choose the most appropriate library for accurate visualization
+4. Make simulations interactive and scientifically accurate`;
 
 const SIMULATION_PROMPT = `You are an expert p5.js Creative Coder and Science Educator.
 Generate an interactive educational simulation.
@@ -411,6 +440,7 @@ Return ONLY valid JSON.`
           // Update module with full content (set loading: false to indicate completion)
           await storage.updateModule(moduleRecord.id, {
             content: { ...(content.content || {}), loading: false },
+            simulationType: content.simulationType || "p5",
             simulationCode: content.simulationCode || null,
             estimatedMinutes: content.estimatedMinutes || 30,
           });
