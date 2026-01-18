@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { isAuthenticated } from "./replit_integrations/auth";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -13,6 +14,42 @@ function getGeminiModel(useProModel = false) {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
   const modelName = useProModel ? "gemini-2.5-pro" : "gemini-2.5-flash";
   return genAI.getGenerativeModel({ model: modelName });
+}
+
+async function searchVerifiedResources(topic: string, moduleTitle: string): Promise<any[]> {
+  if (!GEMINI_API_KEY) return [];
+  
+  try {
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Find 3 real, verified educational resources for learning about "${moduleTitle}" in the context of "${topic}".
+      
+Return ONLY valid JSON array with no markdown:
+[
+  { "type": "article|paper|video|book|course", "title": "Exact resource title", "author": "Author/Creator name", "url": "Real verified URL", "summary": "Brief 1-2 sentence summary" }
+]
+
+Requirements:
+- Only include resources with REAL, working URLs
+- Prefer: MIT OpenCourseWare, Khan Academy, Coursera, YouTube educational channels, arXiv papers, university pages
+- Do NOT make up or guess URLs`,
+      config: {
+        tools: [{ googleSearch: {} }]
+      }
+    });
+
+    const text = response.text || '';
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    return [];
+  } catch (e) {
+    console.error('Resource search error:', e);
+    return [];
+  }
 }
 
 const CURRICULUM_PROMPT = `You are an expert curriculum designer and educator. Generate a complete course curriculum based on the user's topic.
@@ -482,9 +519,10 @@ Return ONLY valid JSON.`
             }
           }
 
-          // Create resources
-          if (content.resources && Array.isArray(content.resources)) {
-            for (const resource of content.resources) {
+          // Create verified resources using Google Search grounding
+          try {
+            const verifiedResources = await searchVerifiedResources(outline.title, moduleOutline.title);
+            for (const resource of verifiedResources) {
               await storage.createResource({
                 courseId: course.id,
                 moduleId: moduleRecord.id,
@@ -494,6 +532,22 @@ Return ONLY valid JSON.`
                 url: resource.url || null,
                 summary: resource.summary || null,
               });
+            }
+          } catch (resourceError) {
+            console.error('Resource search failed, using AI resources:', resourceError);
+            // Fallback to AI-generated resources
+            if (content.resources && Array.isArray(content.resources)) {
+              for (const resource of content.resources) {
+                await storage.createResource({
+                  courseId: course.id,
+                  moduleId: moduleRecord.id,
+                  type: resource.type || "article",
+                  title: resource.title || "Resource",
+                  author: resource.author || null,
+                  url: resource.url || null,
+                  summary: resource.summary || null,
+                });
+              }
             }
           }
 
