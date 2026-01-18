@@ -99,6 +99,11 @@ export default function CourseView() {
     setCompletedModules(completed);
   }, [courseProgress]);
 
+  // Reset module start time whenever the selected module changes
+  useEffect(() => {
+    moduleStartTime.current = Date.now();
+  }, [selectedModuleIndex]);
+
   const markModuleComplete = useMutation({
     mutationFn: async ({ moduleId, timeSpent }: { moduleId: string; timeSpent: number }) => {
       const res = await fetch("/api/progress/update", {
@@ -199,14 +204,14 @@ export default function CourseView() {
     }
     if (selectedModuleIndex < modules.length - 1) {
       setSelectedModuleIndex(selectedModuleIndex + 1);
-      moduleStartTime.current = Date.now();
+      // moduleStartTime is reset by useEffect when selectedModuleIndex changes
     }
   };
 
   const goToPrevModule = () => {
     if (selectedModuleIndex > 0) {
       setSelectedModuleIndex(selectedModuleIndex - 1);
-      moduleStartTime.current = Date.now();
+      // moduleStartTime is reset by useEffect when selectedModuleIndex changes
     }
   };
 
@@ -320,10 +325,7 @@ export default function CourseView() {
                         return (
                           <button
                             key={module.id}
-                            onClick={() => {
-                              setSelectedModuleIndex(idx);
-                              moduleStartTime.current = Date.now();
-                            }}
+                            onClick={() => setSelectedModuleIndex(idx)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
                               idx === selectedModuleIndex
                                 ? "bg-primary/10 text-primary"
