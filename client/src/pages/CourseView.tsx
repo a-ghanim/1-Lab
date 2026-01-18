@@ -28,7 +28,10 @@ import {
   ExternalLink,
   MessageSquare,
   PanelRightOpen,
-  PanelRightClose
+  PanelRightClose,
+  ChevronDown,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import type { Course, Module, Quiz, Resource, Progress as ProgressType } from "@shared/schema";
 
@@ -37,14 +40,21 @@ function ContentCard({
   icon: Icon, 
   children, 
   className = "",
-  accentColor = "primary"
+  accentColor = "primary",
+  defaultOpen = true,
+  textContent
 }: { 
   title: string; 
   icon: React.ElementType; 
   children: React.ReactNode;
   className?: string;
   accentColor?: "primary" | "accent" | "green" | "blue" | "purple";
+  defaultOpen?: boolean;
+  textContent?: string;
 }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   const colorClasses = {
     primary: "text-primary bg-primary/10",
     accent: "text-accent bg-accent/10",
@@ -53,19 +63,81 @@ function ContentCard({
     purple: "text-purple-400 bg-purple-400/10"
   };
 
+  const handleSpeak = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!textContent) return;
+    
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textContent);
+    utterance.rate = 0.95;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`p-6 rounded-2xl bg-card border border-border/50 ${className}`}
+      className={`rounded-2xl bg-card border border-border/50 overflow-hidden ${className}`}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-2 rounded-lg ${colorClasses[accentColor]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <h3 className="text-lg font-semibold">{title}</h3>
+      <div className="flex items-center p-6 hover:bg-muted/30 transition-colors">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-3 flex-1 text-left"
+          data-testid={`button-toggle-${title.toLowerCase().replace(/\s/g, '-')}`}
+        >
+          <div className={`p-2 rounded-lg ${colorClasses[accentColor]}`}>
+            <Icon className="w-5 h-5" />
+          </div>
+          <h3 className="text-lg font-semibold flex-1">{title}</h3>
+        </button>
+        {textContent && (
+          <button
+            onClick={handleSpeak}
+            className={`p-2 rounded-lg transition-colors mr-2 ${isSpeaking ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}`}
+            data-testid={`button-speak-${title.toLowerCase().replace(/\s/g, '-')}`}
+          >
+            {isSpeaking ? (
+              <VolumeX className="w-4 h-4" strokeWidth={1.5} />
+            ) : (
+              <Volume2 className="w-4 h-4" strokeWidth={1.5} />
+            )}
+          </button>
+        )}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-1"
+          data-testid={`button-chevron-${title.toLowerCase().replace(/\s/g, '-')}`}
+        >
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDown className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
+          </motion.div>
+        </button>
       </div>
-      {children}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="px-6 pb-6">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -458,7 +530,12 @@ export default function CourseView() {
                       <div className="grid gap-6">
                         {/* Overview Card */}
                         {moduleContent?.overview && (
-                          <ContentCard title="Overview" icon={BookMarked} accentColor="primary">
+                          <ContentCard 
+                            title="Overview" 
+                            icon={BookMarked} 
+                            accentColor="primary"
+                            textContent={moduleContent.overview}
+                          >
                             <p className="text-foreground/90 leading-relaxed whitespace-pre-line">
                               {moduleContent.overview}
                             </p>
@@ -467,7 +544,13 @@ export default function CourseView() {
 
                         {/* Key Concepts Card */}
                         {moduleContent?.keyPoints && moduleContent.keyPoints.length > 0 && (
-                          <ContentCard title="Key Concepts" icon={Lightbulb} accentColor="accent">
+                          <ContentCard 
+                            title="Key Concepts" 
+                            icon={Lightbulb} 
+                            accentColor="accent"
+                            defaultOpen={true}
+                            textContent={moduleContent.keyPoints.join('. ')}
+                          >
                             <ul className="space-y-3">
                               {moduleContent.keyPoints.map((point: string, i: number) => (
                                 <li key={i} className="flex items-start gap-3">
@@ -483,7 +566,13 @@ export default function CourseView() {
 
                         {/* Detailed Explanation Card */}
                         {moduleContent?.detailedExplanation && (
-                          <ContentCard title="Deep Dive" icon={GraduationCap} accentColor="blue">
+                          <ContentCard 
+                            title="Deep Dive" 
+                            icon={GraduationCap} 
+                            accentColor="blue"
+                            defaultOpen={false}
+                            textContent={moduleContent.detailedExplanation}
+                          >
                             <div className="prose prose-invert prose-sm max-w-none">
                               <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
                                 {moduleContent.detailedExplanation}
@@ -494,7 +583,7 @@ export default function CourseView() {
 
                         {/* Examples Card */}
                         {moduleContent?.examples && moduleContent.examples.length > 0 && (
-                          <ContentCard title="Examples" icon={Target} accentColor="green">
+                          <ContentCard title="Examples" icon={Target} accentColor="green" defaultOpen={false}>
                             <div className="space-y-4">
                               {moduleContent.examples.map((example: any, i: number) => (
                                 <div key={i} className="p-4 rounded-xl bg-muted/30 border border-border/30">
@@ -516,7 +605,7 @@ export default function CourseView() {
 
                         {/* Knowledge Check Card */}
                         {quizzes.length > 0 && (
-                          <ContentCard title="Knowledge Check" icon={Zap} accentColor="accent">
+                          <ContentCard title="Knowledge Check" icon={Zap} accentColor="accent" defaultOpen={false}>
                             <div className="space-y-6">
                               {quizzes.map((quiz, idx) => {
                                 const options = (quiz.options as string[]) || [];
@@ -584,7 +673,7 @@ export default function CourseView() {
 
                         {/* Resources Card */}
                         {resources.length > 0 && (
-                          <ContentCard title="Further Reading" icon={FileText} accentColor="primary">
+                          <ContentCard title="Further Reading" icon={FileText} accentColor="primary" defaultOpen={false}>
                             <div className="grid gap-3">
                               {resources.map((resource) => (
                                 <a
