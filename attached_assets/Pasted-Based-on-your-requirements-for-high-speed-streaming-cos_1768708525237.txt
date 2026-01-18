@@ -1,0 +1,33 @@
+Based on your requirements for high-speed streaming, cost-efficiency, and complex reasoning (like generating p5.js code and structured curricula), the best choice for your platform is **Gemini 3 Flash**.
+
+While the "Pro" models offer slightly higher reasoning peaks, the **Gemini 3** family features a "Thinking" mode that allows the Flash model to bridge that gap effectively. For an educational platform, Flash provides the sub-second latency needed for an interactive feel while being significantly cheaper for high-volume quiz and summary generation.
+
+### Recommended Model & ID
+
+You should use the stable production ID to ensure consistency in your application.
+
+| Requirement | Recommended Model | Exact Model ID |
+| --- | --- | --- |
+| **Primary Production** | **Gemini 3 Flash** | `gemini-3-flash` |
+| **Complex Logic/Heavy Coding** | **Gemini 3 Pro** | `gemini-3-pro` |
+
+---
+
+### Why this fits your specific features:
+
+* **p5.js Simulations:** Gemini 3 Flash is highly capable of generating clean, functional JavaScript. For complex physics simulations, you can enable the **"medium" thinking level** via the API to ensure the logic is sound before the code is streamed.
+* **Structured JSON Output:** Both models natively support `response_mime_type: "application/json"`. You can provide a JSON schema in your API call to ensure the quizzes and curricula always match your platform's data structure without parsing errors.
+* **Document Summarization & Annotation:** With a **1-million-token context window**, you can upload entire textbooks or long research papers. Flash can "read" these in seconds to generate annotations or summaries.
+* **Streaming & Cost:** Gemini 3 Flash is optimized for the "Live" experience. It supports fast, server-sent events (SSE) for streaming, and its pricing is a fraction of the Pro model, making it the only viable choice for a "high volume" user base.
+
+### Strategic Implementation Tip
+
+For the best balance of quality and cost, use a **Router Pattern**:
+
+1. **Flash (`gemini-3-flash`)**: Use for 90% of tasks—quizzes, summaries, progress tracking, and simple curricula.
+2. **Pro (`gemini-3-pro`)**: Use only for the initial "Deep Dive" curriculum generation or when a user asks for a particularly complex simulation (e.g., "Simulate a double-pendulum with drag").
+
+Would you like me to provide a **Python code snippet** showing how to implement the JSON schema for your quiz generation?
+
+[Learn to use the Gemini 3 API](https://www.youtube.com/watch?v=RDOMKIw1aF4)
+This video provides a practical look at how the latest Gemini models handle coding tasks like p5.js and complex logic, which is essential for your simulation and curriculum features.
