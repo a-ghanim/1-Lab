@@ -541,6 +541,100 @@ Return ONLY valid JSON.`
     }
   });
 
+  // Regenerate module content for stuck modules
+  app.post("/api/modules/:id/regenerate", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const moduleId = req.params.id as string;
+      const module = await storage.getModule(moduleId);
+      
+      if (!module) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+
+      // Get the course for context
+      const course = await storage.getCourse(module.courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+
+      // Generate content
+      const contentText = await generateWithClaude(
+        MODULE_CONTENT_PROMPT,
+        `Generate complete content for this module:
+Course: "${course.title}"
+Module: "${module.title}"
+Description: "${module.description}"
+
+Return ONLY valid JSON.`
+      );
+
+      let contentJson = contentText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim() || '{}';
+      
+      let content;
+      try {
+        content = JSON.parse(contentJson);
+      } catch (e) {
+        content = { content: { overview: "Content generation failed. Please try again." }, quizzes: [], resources: [] };
+      }
+
+      // Update module with full content
+      await storage.updateModule(moduleId, {
+        content: { ...(content.content || {}), loading: false },
+        estimatedMinutes: content.estimatedMinutes || 30,
+      });
+
+      // Create quizzes if they don't exist
+      const existingQuizzes = await storage.getQuizzesByModule(moduleId);
+      if (existingQuizzes.length === 0 && content.quizzes && Array.isArray(content.quizzes)) {
+        for (let q = 0; q < content.quizzes.length; q++) {
+          const quiz = content.quizzes[q];
+          await storage.createQuiz({
+            moduleId: moduleId,
+            question: quiz.question || "",
+            options: quiz.options || [],
+            correctAnswer: quiz.correctAnswer || "",
+            explanation: quiz.explanation || "",
+            order: q + 1,
+          });
+        }
+      }
+
+      // Create resources if they don't exist
+      const existingResources = await storage.getResourcesByModule(moduleId);
+      if (existingResources.length === 0) {
+        let verifiedResources: any[] = [];
+        try {
+          verifiedResources = await searchVerifiedResources(course.title, module.title);
+        } catch (resourceError) {
+          console.error('Resource search failed:', resourceError);
+        }
+        
+        const resourcesToCreate = verifiedResources.length > 0 
+          ? verifiedResources 
+          : (content.resources && Array.isArray(content.resources) ? content.resources : []);
+        
+        for (const resource of resourcesToCreate) {
+          await storage.createResource({
+            courseId: course.id,
+            moduleId: moduleId,
+            type: resource.type || "article",
+            title: resource.title || "Resource",
+            author: resource.author || null,
+            url: resource.url || null,
+            summary: resource.summary || null,
+          });
+        }
+      }
+
+      // Return updated module
+      const updatedModule = await storage.getModule(moduleId);
+      res.json(updatedModule);
+    } catch (error: any) {
+      console.error("Module regeneration error:", error);
+      res.status(500).json({ error: error.message || "Failed to regenerate module" });
+    }
+  });
+
   // Streak endpoints
   app.get("/api/streak", isAuthenticated, async (req: Request, res: Response) => {
     try {

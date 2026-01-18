@@ -22,6 +22,7 @@ import {
   Sparkles,
   ExternalLink,
   MessageSquare,
+  RefreshCw,
 } from "lucide-react";
 import type { Course, Module, Quiz, Resource, Progress as ProgressType } from "@shared/schema";
 
@@ -82,6 +83,22 @@ export default function CourseView() {
       queryClient.invalidateQueries({ queryKey: ["/api/progress", courseId] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/streak"] });
+    },
+  });
+
+  const regenerateModule = useMutation({
+    mutationFn: async (moduleId: string) => {
+      const res = await fetch(`/api/modules/${moduleId}/regenerate`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to regenerate module");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId, "modules"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/modules", currentModule?.id, "quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/modules", currentModule?.id, "resources"] });
     },
   });
 
@@ -347,8 +364,30 @@ export default function CourseView() {
 
                         {isModuleLoading(currentModule) ? (
                           <div className="flex flex-col items-center justify-center py-16">
-                            <GeneratingLoader size="sm" />
-                            <p className="mt-4 text-sm text-muted-foreground">Generating content...</p>
+                            {regenerateModule.isPending ? (
+                              <>
+                                <GeneratingLoader size="sm" />
+                                <p className="mt-4 text-sm text-muted-foreground">Regenerating content...</p>
+                              </>
+                            ) : (
+                              <>
+                                <GeneratingLoader size="sm" />
+                                <p className="mt-4 text-sm text-muted-foreground">Generating content...</p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => regenerateModule.mutate(currentModule.id)}
+                                  className="mt-4 gap-2"
+                                  data-testid="button-retry-generate"
+                                >
+                                  <RefreshCw className="w-4 h-4" />
+                                  Retry Generation
+                                </Button>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  Content stuck? Click retry to regenerate.
+                                </p>
+                              </>
+                            )}
                           </div>
                         ) : (
                           <>
