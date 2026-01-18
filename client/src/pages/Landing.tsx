@@ -32,7 +32,7 @@ export default function Landing() {
 
       {/* Full-width Hero */}
       <div 
-        className="relative min-h-[80vh] md:min-h-[90vh] flex items-center"
+        className="relative min-h-[80vh] md:min-h-[90vh] flex items-end"
         style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: "cover",
@@ -40,7 +40,7 @@ export default function Landing() {
         }}
       >
         <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 w-full px-6 md:px-12 lg:px-20">
+        <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 pb-12 md:pb-20">
           <div className="max-w-6xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
