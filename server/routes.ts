@@ -36,14 +36,17 @@ Requirements:
 - Prefer: MIT OpenCourseWare, Khan Academy, Coursera, YouTube educational channels, arXiv papers, university pages
 - Do NOT make up or guess URLs`,
       config: {
-        tools: [{ googleSearch: {} }]
+        tools: [{ google_search: {} }]
       }
     });
 
-    const text = response.text || '';
+    const text = typeof response.text === 'function' ? response.text() : (response.text || '');
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const resources = JSON.parse(jsonMatch[0]);
+      if (resources.length > 0) {
+        return resources;
+      }
     }
     return [];
   } catch (e) {
@@ -520,35 +523,28 @@ Return ONLY valid JSON.`
           }
 
           // Create verified resources using Google Search grounding
+          let verifiedResources: any[] = [];
           try {
-            const verifiedResources = await searchVerifiedResources(outline.title, moduleOutline.title);
-            for (const resource of verifiedResources) {
-              await storage.createResource({
-                courseId: course.id,
-                moduleId: moduleRecord.id,
-                type: resource.type || "article",
-                title: resource.title || "Resource",
-                author: resource.author || null,
-                url: resource.url || null,
-                summary: resource.summary || null,
-              });
-            }
+            verifiedResources = await searchVerifiedResources(outline.title, moduleOutline.title);
           } catch (resourceError) {
-            console.error('Resource search failed, using AI resources:', resourceError);
-            // Fallback to AI-generated resources
-            if (content.resources && Array.isArray(content.resources)) {
-              for (const resource of content.resources) {
-                await storage.createResource({
-                  courseId: course.id,
-                  moduleId: moduleRecord.id,
-                  type: resource.type || "article",
-                  title: resource.title || "Resource",
-                  author: resource.author || null,
-                  url: resource.url || null,
-                  summary: resource.summary || null,
-                });
-              }
-            }
+            console.error('Resource search failed:', resourceError);
+          }
+          
+          // Use verified resources if available, otherwise fallback to AI-generated
+          const resourcesToCreate = verifiedResources.length > 0 
+            ? verifiedResources 
+            : (content.resources && Array.isArray(content.resources) ? content.resources : []);
+          
+          for (const resource of resourcesToCreate) {
+            await storage.createResource({
+              courseId: course.id,
+              moduleId: moduleRecord.id,
+              type: resource.type || "article",
+              title: resource.title || "Resource",
+              author: resource.author || null,
+              url: resource.url || null,
+              summary: resource.summary || null,
+            });
           }
 
           // Send module completed event
