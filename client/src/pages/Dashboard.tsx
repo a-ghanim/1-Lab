@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
+import { FocusTimer } from "@/components/FocusTimer";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,15 @@ export default function Dashboard() {
     queryFn: async () => {
       const res = await fetch("/api/streak", { credentials: "include" });
       if (!res.ok) return { currentStreak: 0, longestStreak: 0 };
+      return res.json();
+    },
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["/api/stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/stats", { credentials: "include" });
+      if (!res.ok) return { modulesCompleted: 0, hoursLearned: 0 };
       return res.json();
     },
   });
@@ -217,8 +227,8 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
                 { icon: GraduationCap, label: "Courses", value: courses.length, color: "text-primary" },
-                { icon: Target, label: "Modules Completed", value: 0, color: "text-accent" },
-                { icon: TrendingUp, label: "Hours Learned", value: 0, color: "text-green-400" },
+                { icon: Target, label: "Modules Completed", value: stats?.modulesCompleted || 0, color: "text-accent" },
+                { icon: TrendingUp, label: "Hours Learned", value: stats?.hoursLearned || 0, color: "text-green-400" },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -300,6 +310,7 @@ export default function Dashboard() {
           </motion.div>
         </div>
       </div>
+      <FocusTimer />
     </Layout>
   );
 }

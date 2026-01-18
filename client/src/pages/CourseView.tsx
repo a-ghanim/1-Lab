@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRoute, useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { UnifiedSimulation } from "@/components/UnifiedSimulation";
+import { FocusTimer } from "@/components/FocusTimer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -27,7 +28,7 @@ import {
   BookMarked,
   ExternalLink
 } from "lucide-react";
-import type { Course, Module, Quiz, Resource } from "@shared/schema";
+import type { Course, Module, Quiz, Resource, Progress as ProgressType } from "@shared/schema";
 
 function ContentCard({ 
   title, 
@@ -78,6 +79,49 @@ export default function CourseView() {
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
+  const [completedModules, setCompletedModules] = useState<Set<string>>(new Set());
+  const moduleStartTime = useRef<number>(Date.now());
+
+  const { data: courseProgress = [] } = useQuery<ProgressType[]>({
+    queryKey: ["/api/progress", courseId],
+    queryFn: async () => {
+      const res = await fetch(`/api/progress/${courseId}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!courseId,
+  });
+
+  useEffect(() => {
+    const completed = new Set(
+      courseProgress.filter(p => p.completed).map(p => p.moduleId || '')
+    );
+    setCompletedModules(completed);
+  }, [courseProgress]);
+
+  const markModuleComplete = useMutation({
+    mutationFn: async ({ moduleId, timeSpent }: { moduleId: string; timeSpent: number }) => {
+      const res = await fetch("/api/progress/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          courseId,
+          moduleId,
+          completed: true,
+          timeSpent: Math.round(timeSpent / 60),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update progress");
+      return res.json();
+    },
+    onSuccess: (_, { moduleId }) => {
+      setCompletedModules(prev => new Set([...prev, moduleId]));
+      queryClient.invalidateQueries({ queryKey: ["/api/progress", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/streak"] });
+    },
+  });
 
   const { data: course, isLoading: courseLoading } = useQuery<Course>({
     queryKey: ["/api/courses", courseId],
@@ -149,15 +193,29 @@ export default function CourseView() {
   };
 
   const goToNextModule = () => {
+    if (currentModule && !completedModules.has(currentModule.id)) {
+      const timeSpent = Date.now() - moduleStartTime.current;
+      markModuleComplete.mutate({ moduleId: currentModule.id, timeSpent });
+    }
     if (selectedModuleIndex < modules.length - 1) {
       setSelectedModuleIndex(selectedModuleIndex + 1);
+      moduleStartTime.current = Date.now();
     }
   };
 
   const goToPrevModule = () => {
     if (selectedModuleIndex > 0) {
       setSelectedModuleIndex(selectedModuleIndex - 1);
+      moduleStartTime.current = Date.now();
     }
+  };
+
+  const handleCompleteCourse = () => {
+    if (currentModule && !completedModules.has(currentModule.id)) {
+      const timeSpent = Date.now() - moduleStartTime.current;
+      markModuleComplete.mutate({ moduleId: currentModule.id, timeSpent });
+    }
+    navigate("/dashboard");
   };
 
   if (courseLoading || modulesLoading) {
@@ -223,9 +281,14 @@ export default function CourseView() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">0%</span>
+                      <span className="font-medium">
+                        {modules.length > 0 ? Math.round((completedModules.size / modules.length) * 100) : 0}%
+                      </span>
                     </div>
-                    <Progress value={0} className="h-2" />
+                    <Progress 
+                      value={modules.length > 0 ? (completedModules.size / modules.length) * 100 : 0} 
+                      className="h-2" 
+                    />
                   </div>
                 </div>
 
@@ -253,29 +316,40 @@ export default function CourseView() {
                     ) : (
                       modules.map((module, idx) => {
                         const moduleLoading = isModuleLoading(module);
+                        const isCompleted = completedModules.has(module.id);
                         return (
                           <button
                             key={module.id}
-                            onClick={() => setSelectedModuleIndex(idx)}
+                            onClick={() => {
+                              setSelectedModuleIndex(idx);
+                              moduleStartTime.current = Date.now();
+                            }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
                               idx === selectedModuleIndex
                                 ? "bg-primary/10 text-primary"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                : isCompleted
+                                  ? "text-green-400 hover:bg-muted"
+                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
                             }`}
                             data-testid={`button-module-${idx}`}
                           >
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                              idx === selectedModuleIndex
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground"
+                              isCompleted
+                                ? "bg-green-500 text-white"
+                                : idx === selectedModuleIndex
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
                             }`}>
                               {moduleLoading ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : isCompleted ? (
+                                <Check className="w-3 h-3" />
                               ) : (
                                 idx + 1
                               )}
                             </div>
                             <span className="truncate flex-1">{module.title}</span>
+                            {isCompleted && <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />}
                           </button>
                         );
                       })
@@ -559,14 +633,16 @@ export default function CourseView() {
                             <Button
                               onClick={goToNextModule}
                               className="gap-2"
+                              disabled={markModuleComplete.isPending}
                             >
-                              Next Module
+                              {completedModules.has(currentModule?.id || '') ? 'Next Module' : 'Complete & Continue'}
                               <ArrowRight className="w-4 h-4" />
                             </Button>
                           ) : (
                             <Button
-                              onClick={() => navigate("/dashboard")}
+                              onClick={handleCompleteCourse}
                               className="gap-2 bg-green-600 hover:bg-green-700"
+                              disabled={markModuleComplete.isPending}
                             >
                               <CheckCircle className="w-4 h-4" />
                               Complete Course
@@ -586,6 +662,7 @@ export default function CourseView() {
           </div>
         </div>
       </div>
+      <FocusTimer courseId={courseId} moduleId={currentModule?.id} />
     </Layout>
   );
 }
