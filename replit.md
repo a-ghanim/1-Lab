@@ -36,8 +36,15 @@ One Breath Lab is a NotebookLM-style AI research and learning assistant. Users c
 #### Pages
 - `pages/Landing.tsx` - Public landing page with document-focused CTA
 - `pages/Onboarding.tsx` - Learner questionnaire flow
-- `pages/Dashboard.tsx` - Main user dashboard with course generation
+- `pages/Dashboard.tsx` - Main user dashboard with course generation, search/filter
 - `pages/CourseView.tsx` - NotebookLM-style viewer with sources panel and AI chat
+- `pages/Bookmarks.tsx` - User's bookmarked modules
+- `pages/Achievements.tsx` - Achievement badges and progress
+- `pages/Analytics.tsx` - Learning statistics and progress charts
+- `pages/Flashcards.tsx` - Spaced repetition flashcard review
+- `pages/DailyReview.tsx` - Quick recap of recent learning
+- `pages/Folders.tsx` - Course organization with folders
+- `pages/SharedCourse.tsx` - Public view of shared courses
 
 #### Components
 - `components/Layout.tsx` - Main layout with navigation
@@ -46,6 +53,14 @@ One Breath Lab is a NotebookLM-style AI research and learning assistant. Users c
 - `components/SourcesPanel.tsx` - Document sources management panel
 - `components/FocusTimer.tsx` - Study session timer
 - `components/CursorGlow.tsx` - Custom cursor effect
+- `components/NotesPanel.tsx` - Module notes CRUD
+- `components/BookmarkButton.tsx` - Toggle bookmark on modules
+- `components/LearningGoalWidget.tsx` - Weekly goal progress widget
+- `components/ShareCourseDialog.tsx` - Generate shareable course links
+- `components/ExportPDFButton.tsx` - Export course as printable PDF
+- `components/Certificate.tsx` - Completion certificate display
+- `components/CustomQuizForm.tsx` - Create custom quiz questions
+- `components/CustomQuizList.tsx` - Display custom quizzes
 
 ### Backend (server/)
 
@@ -84,6 +99,16 @@ One Breath Lab is a NotebookLM-style AI research and learning assistant. Users c
 - `sources` - Uploaded documents/URLs for AI context
 - `chat_messages` - AI conversation history
 - `streaks` - Daily learning streaks
+- `notes` - User notes on modules
+- `bookmarks` - Saved modules for quick access
+- `learning_goals` - Weekly learning targets and progress
+- `achievements` - Unlocked badges and milestones
+- `flashcards` - Spaced repetition flashcards with SM-2 algorithm
+- `folders` - Course organization folders
+- `course_folders` - Many-to-many course-folder relationship
+- `shared_courses` - Public share links for courses
+- `certificates` - Course completion certificates
+- `custom_quizzes` - User-created quiz questions
 
 ### AI Integration
 - **Provider**: Anthropic Claude
@@ -103,6 +128,18 @@ One Breath Lab is a NotebookLM-style AI research and learning assistant. Users c
 8. **Progress Tracking** - Module completion, time spent
 9. **Focus Timer** - Study session timer for productivity
 10. **Gamification** - Daily streaks with streak counters
+11. **Notes System** - Take notes on each module
+12. **Bookmarks** - Save modules for quick access
+13. **Learning Goals** - Weekly targets with progress tracking
+14. **Achievements** - Unlock badges for milestones (8 achievement types)
+15. **Daily Review** - Quick recap and quiz from recent content
+16. **Flashcards** - Spaced repetition with SM-2 algorithm
+17. **Analytics** - Learning stats dashboard with charts
+18. **Course Sharing** - Generate public share links
+19. **PDF Export** - Download courses as printable PDF
+20. **Certificates** - Generate completion certificates
+21. **Folders** - Organize courses into folders
+22. **Custom Quizzes** - Create your own quiz questions
 
 ## User Flow
 
@@ -128,6 +165,20 @@ One Breath Lab is a NotebookLM-style AI research and learning assistant. Users c
 - Google Gemini API
 
 ## Recent Changes
+- 2026-01-18: Added 14 new features to complete the learning platform:
+  - Search and filter courses on dashboard
+  - Notes system for taking notes on modules
+  - Bookmarks to save favorite modules
+  - Weekly learning goals with progress tracking
+  - 8 achievement badges with unlock system
+  - Daily review with key points recap and quick quiz
+  - Flashcards with SM-2 spaced repetition algorithm
+  - Analytics dashboard with learning statistics
+  - Course sharing via public links
+  - PDF export for printable course content
+  - Completion certificates
+  - Folder system for course organization
+  - Custom quiz questions creation
 - 2026-01-18: Transform to NotebookLM-style research assistant
 - Removed all simulation features (p5.js, Matter.js, Three.js, D3.js)
 - Added sources and chat_messages tables
