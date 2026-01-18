@@ -1,17 +1,12 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Home, 
   Settings, 
   LogOut, 
   ChevronDown,
   Flame,
-  User,
-  Menu,
-  X
+  User
 } from "lucide-react";
-import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,49 +22,20 @@ interface LayoutProps {
 
 export function Layout({ children, showNav = true }: LayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
-  const [location] = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: Home },
-  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground dot-grid">
       {showNav && isAuthenticated && (
         <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-14">
-              <div className="flex items-center gap-8">
-                <Link 
-                  href="/dashboard"
-                  className="flex items-center gap-2 group"
-                >
-                  <div className="w-5 h-5 bg-primary" />
-                  <span className="font-semibold hidden sm:block">One Breath Lab</span>
-                </Link>
-
-                <nav className="hidden md:flex items-center gap-1">
-                  {navItems.map((item) => {
-                    const isActive = location === item.href || location.startsWith(item.href + "/");
-                    return (
-                      <Link 
-                        key={item.href} 
-                        href={item.href}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition-colors
-                          ${isActive 
-                            ? "text-foreground" 
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
-                      >
-                        <item.icon className="w-4 h-4" strokeWidth={1.5} />
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
+              <Link 
+                href="/dashboard"
+                className="flex items-center gap-2"
+              >
+                <div className="w-5 h-5 bg-primary" />
+                <span className="font-medium hidden sm:block">One Breath Lab</span>
+              </Link>
 
               <div className="flex items-center gap-4">
                 <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 text-sm text-muted-foreground">
@@ -116,49 +82,9 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
-                <button
-                  className="md:hidden p-2 hover:bg-muted"
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  data-testid="button-mobile-menu"
-                >
-                  {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                </button>
               </div>
             </div>
           </div>
-
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="md:hidden border-t border-border bg-background"
-              >
-                <nav className="p-4 space-y-1">
-                  {navItems.map((item) => {
-                    const isActive = location === item.href;
-                    return (
-                      <Link 
-                        key={item.href} 
-                        href={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2 text-sm font-medium
-                          ${isActive 
-                            ? "text-foreground bg-muted" 
-                            : "text-muted-foreground hover:bg-muted"
-                          }`}
-                      >
-                        <item.icon className="w-4 h-4" strokeWidth={1.5} />
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </header>
       )}
 
