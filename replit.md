@@ -1,7 +1,7 @@
 # One Breath Lab
 
 ## Overview
-One Breath Lab is an AI-powered learning management system that "spawns a school from a prompt." Users authenticate via Google, complete a learner questionnaire, then generate custom curricula from any topic. The platform provides interactive p5.js simulations, AI-generated quizzes, curated resources, and progress tracking with streaks.
+One Breath Lab is a NotebookLM-style AI research and learning assistant. Users can upload documents (text, URLs), have AI conversations grounded in their sources, and generate comprehensive courses from any topic. The platform features Google OAuth authentication, progress tracking with streaks, and AI-powered curriculum generation.
 
 ## Design System
 
@@ -32,16 +32,17 @@ One Breath Lab is an AI-powered learning management system that "spawns a school
 ### Frontend (client/src/)
 
 #### Pages
-- `pages/Landing.tsx` - Public landing page with login CTA
+- `pages/Landing.tsx` - Public landing page with document-focused CTA
 - `pages/Onboarding.tsx` - Learner questionnaire flow
 - `pages/Dashboard.tsx` - Main user dashboard with course generation
-- `pages/CourseView.tsx` - Course viewer with modules, simulations, quizzes
-- `pages/Home.tsx` - Original lab page (standalone simulation generator)
+- `pages/CourseView.tsx` - NotebookLM-style viewer with sources panel and AI chat
 
 #### Components
 - `components/Layout.tsx` - Main layout with navigation
 - `components/ParticleField.tsx` - Interactive particle background
-- `components/SimulationRunner.tsx` - p5.js canvas runner
+- `components/NotebookChat.tsx` - AI chat interface for document Q&A
+- `components/SourcesPanel.tsx` - Document sources management panel
+- `components/FocusTimer.tsx` - Study session timer
 - `components/CursorGlow.tsx` - Custom cursor effect
 
 ### Backend (server/)
@@ -61,8 +62,12 @@ One Breath Lab is an AI-powered learning management system that "spawns a school
 - `GET /api/modules/:id/resources` - Get module resources
 - `GET /api/streak` - Get user streak data
 - `POST /api/streak/update` - Update streak
-- `POST /api/generate` - Generate p5.js simulation
-- `POST /api/generate-stream` - SSE streaming generation
+- `GET /api/sources/:notebookId` - Get sources for a notebook/course
+- `POST /api/sources` - Add a source (text or URL)
+- `DELETE /api/sources/:id` - Delete a source
+- `GET /api/chat/:notebookId` - Get chat history
+- `POST /api/chat` - Send message and get AI response
+- `DELETE /api/chat/:notebookId` - Clear chat history
 
 ### Database Schema (shared/schema.ts)
 
@@ -70,30 +75,34 @@ One Breath Lab is an AI-powered learning management system that "spawns a school
 - `users` - Auth users (managed by Replit Auth)
 - `learner_profiles` - Level, learning style, goals, weekly hours
 - `courses` - Generated courses with title, description, curriculum JSON
-- `modules` - Course modules with content, simulation code
+- `modules` - Course modules with content (no simulation code)
 - `progress` - User progress per course/module
 - `quizzes` - Module quizzes with options and answers
 - `resources` - Curated papers, lectures, books
-- `uploads` - User document uploads
+- `sources` - Uploaded documents/URLs for AI context
+- `chat_messages` - AI conversation history
 - `streaks` - Daily learning streaks
 
 ### AI Integration
 - **Provider**: Google Gemini
 - **Models**: 
-  - `gemini-2.5-flash` - Fast generation (simulations)
+  - `gemini-2.5-flash` - Fast responses (chat)
   - `gemini-2.5-pro` - Complex reasoning (curriculum)
 - **API Key**: Server-side via GEMINI_API_KEY secret
+- **Features**: Source-grounded conversations, curriculum generation
 
 ## Core Features
 
 1. **Authentication** - Google OAuth via Replit Auth
 2. **Onboarding** - 4-step questionnaire (level, style, goals, time)
 3. **Course Generation** - AI creates full curriculum from prompt
-4. **Interactive Simulations** - p5.js visualizations in each module
-5. **Knowledge Checks** - AI-generated quizzes with explanations
-6. **Resource Curation** - Papers, lectures, books per module
-7. **Progress Tracking** - Module completion, time spent
-8. **Gamification** - Daily streaks with streak counters
+4. **Source Management** - Upload text content and URLs as research sources
+5. **AI Chat** - Have conversations grounded in your uploaded sources
+6. **Knowledge Checks** - AI-generated quizzes with explanations
+7. **Resource Curation** - Papers, lectures, books per module
+8. **Progress Tracking** - Module completion, time spent
+9. **Focus Timer** - Study session timer for productivity
+10. **Gamification** - Daily streaks with streak counters
 
 ## User Flow
 
@@ -103,8 +112,10 @@ One Breath Lab is an AI-powered learning management system that "spawns a school
 4. Complete questionnaire → Save profile
 5. Arrive at `/dashboard` → See courses, stats
 6. Enter topic prompt → Generate course
-7. Click course → View modules, simulations, quizzes
-8. Complete modules → Track progress, maintain streaks
+7. Click course → View modules with sources panel and AI chat
+8. Add sources → Upload documents or URLs for context
+9. Chat with AI → Ask questions about your sources
+10. Complete modules → Track progress, maintain streaks
 
 ## Tech Stack
 - React 19 + TypeScript
@@ -115,11 +126,11 @@ One Breath Lab is an AI-powered learning management system that "spawns a school
 - Express.js backend
 - PostgreSQL with Drizzle ORM
 - Google Gemini API
-- p5.js via CDN for simulations
 
 ## Recent Changes
-- 2026-01-18: Full LMS rebuild with auth, courses, curriculum generation
-- New design system: Paper.design + Micro.so aesthetic
-- Database schema: 8 tables for full LMS
-- Protected routes with session-based auth
-- AI curriculum generator with modules, quizzes, resources
+- 2026-01-18: Transform to NotebookLM-style research assistant
+- Removed all simulation features (p5.js, Matter.js, Three.js, D3.js)
+- Added sources and chat_messages tables
+- New NotebookChat and SourcesPanel components
+- AI chat grounded in uploaded sources
+- CourseView redesigned with split-panel layout

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { FocusTimer } from "@/components/FocusTimer";
+import { NotebookChat } from "@/components/NotebookChat";
+import { SourcesPanel } from "@/components/SourcesPanel";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -11,21 +13,21 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle,
-  Circle,
   Clock,
   Loader2,
   Zap,
   Check,
   X,
   FileText,
-  Link as LinkIcon,
   Sparkles,
   Lightbulb,
-  Play,
   GraduationCap,
   Target,
   BookMarked,
-  ExternalLink
+  ExternalLink,
+  MessageSquare,
+  PanelRightOpen,
+  PanelRightClose
 } from "lucide-react";
 import type { Course, Module, Quiz, Resource, Progress as ProgressType } from "@shared/schema";
 
@@ -79,6 +81,7 @@ export default function CourseView() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
   const [completedModules, setCompletedModules] = useState<Set<string>>(new Set());
+  const [showChatPanel, setShowChatPanel] = useState(true);
   const moduleStartTime = useRef<number>(Date.now());
 
   const { data: courseProgress = [] } = useQuery<ProgressType[]>({
@@ -252,17 +255,32 @@ export default function CourseView() {
   return (
     <Layout>
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-            data-testid="button-back-dashboard"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </button>
+        <div className="flex h-[calc(100vh-64px)]">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="button-back-dashboard"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Dashboard
+                </button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowChatPanel(!showChatPanel)}
+                  className="gap-2 lg:hidden"
+                  data-testid="button-toggle-chat"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  {showChatPanel ? "Hide Chat" : "Show Chat"}
+                </Button>
+              </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
+              <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar */}
             <aside className="lg:w-80 shrink-0">
               <div className="sticky top-24 space-y-6">
@@ -651,6 +669,30 @@ export default function CourseView() {
               </AnimatePresence>
             </main>
           </div>
+        </div>
+      </div>
+
+          {/* AI Chat Panel */}
+          <AnimatePresence>
+            {showChatPanel && courseId && (
+              <motion.aside
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 380, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="hidden lg:flex flex-col border-l border-border/50 bg-card/50 overflow-hidden"
+              >
+                <div className="flex-1 flex flex-col h-full">
+                  <div className="h-1/2 border-b border-border/50">
+                    <SourcesPanel notebookId={courseId} />
+                  </div>
+                  <div className="h-1/2">
+                    <NotebookChat notebookId={courseId} />
+                  </div>
+                </div>
+              </motion.aside>
+            )}
+          </AnimatePresence>
         </div>
       </div>
       <FocusTimer courseId={courseId} moduleId={currentModule?.id} />
