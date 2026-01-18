@@ -159,6 +159,115 @@ export const streaks = pgTable("streaks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// User notes on modules
+export const notes = pgTable("notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  moduleId: varchar("module_id").notNull().references(() => modules.id),
+  courseId: varchar("course_id").notNull().references(() => courses.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Bookmarks for quick access
+export const bookmarks = pgTable("bookmarks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  moduleId: varchar("module_id").notNull().references(() => modules.id),
+  courseId: varchar("course_id").notNull().references(() => courses.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Weekly learning goals
+export const learningGoals = pgTable("learning_goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  weeklyModulesTarget: integer("weekly_modules_target").default(5),
+  weeklyHoursTarget: integer("weekly_hours_target").default(5),
+  weekStart: timestamp("week_start").notNull(),
+  modulesCompleted: integer("modules_completed").default(0),
+  hoursCompleted: integer("hours_completed").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User achievements/badges
+export const achievements = pgTable("achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // 'first_course', 'streak_7', 'modules_10', etc.
+  title: varchar("title").notNull(),
+  description: text("description"),
+  icon: varchar("icon"), // emoji or icon name
+  unlockedAt: timestamp("unlocked_at").defaultNow(),
+});
+
+// Flashcards for spaced repetition
+export const flashcards = pgTable("flashcards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  moduleId: varchar("module_id").notNull().references(() => modules.id),
+  courseId: varchar("course_id").notNull().references(() => courses.id),
+  front: text("front").notNull(),
+  back: text("back").notNull(),
+  nextReviewAt: timestamp("next_review_at").defaultNow(),
+  interval: integer("interval").default(1), // days until next review
+  easeFactor: integer("ease_factor").default(250), // 2.5 * 100 for precision
+  repetitions: integer("repetitions").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Course folders for organization
+export const folders = pgTable("folders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  color: varchar("color").default("#6366f1"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Folder-course relationship
+export const courseFolders = pgTable("course_folders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => courses.id),
+  folderId: varchar("folder_id").notNull().references(() => folders.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Shareable course links
+export const sharedCourses = pgTable("shared_courses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => courses.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  shareCode: varchar("share_code").notNull().unique(),
+  isPublic: boolean("is_public").default(true),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Course completion certificates
+export const certificates = pgTable("certificates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  courseId: varchar("course_id").notNull().references(() => courses.id),
+  certificateCode: varchar("certificate_code").notNull().unique(),
+  completedAt: timestamp("completed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Custom user-created quiz questions
+export const customQuizzes = pgTable("custom_quizzes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  moduleId: varchar("module_id").notNull().references(() => modules.id),
+  question: text("question").notNull(),
+  options: jsonb("options").notNull(),
+  correctAnswer: varchar("correct_answer").notNull(),
+  explanation: text("explanation"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(learnerProfiles, {
@@ -203,6 +312,16 @@ export const insertUploadSchema = createInsertSchema(uploads).omit({ id: true, c
 export const insertStudySessionSchema = createInsertSchema(studySessions).omit({ id: true, createdAt: true });
 export const insertSourceSchema = createInsertSchema(sources).omit({ id: true, createdAt: true });
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
+export const insertNoteSchema = createInsertSchema(notes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBookmarkSchema = createInsertSchema(bookmarks).omit({ id: true, createdAt: true });
+export const insertLearningGoalSchema = createInsertSchema(learningGoals).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAchievementSchema = createInsertSchema(achievements).omit({ id: true, unlockedAt: true });
+export const insertFlashcardSchema = createInsertSchema(flashcards).omit({ id: true, createdAt: true });
+export const insertFolderSchema = createInsertSchema(folders).omit({ id: true, createdAt: true });
+export const insertCourseFolderSchema = createInsertSchema(courseFolders).omit({ id: true, createdAt: true });
+export const insertSharedCourseSchema = createInsertSchema(sharedCourses).omit({ id: true, createdAt: true });
+export const insertCertificateSchema = createInsertSchema(certificates).omit({ id: true, createdAt: true, completedAt: true });
+export const insertCustomQuizSchema = createInsertSchema(customQuizzes).omit({ id: true, createdAt: true });
 
 // Types
 export type LearnerProfile = typeof learnerProfiles.$inferSelect;
@@ -225,3 +344,23 @@ export type Source = typeof sources.$inferSelect;
 export type InsertSource = z.infer<typeof insertSourceSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type Note = typeof notes.$inferSelect;
+export type InsertNote = z.infer<typeof insertNoteSchema>;
+export type Bookmark = typeof bookmarks.$inferSelect;
+export type InsertBookmark = z.infer<typeof insertBookmarkSchema>;
+export type LearningGoal = typeof learningGoals.$inferSelect;
+export type InsertLearningGoal = z.infer<typeof insertLearningGoalSchema>;
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+export type Flashcard = typeof flashcards.$inferSelect;
+export type InsertFlashcard = z.infer<typeof insertFlashcardSchema>;
+export type Folder = typeof folders.$inferSelect;
+export type InsertFolder = z.infer<typeof insertFolderSchema>;
+export type CourseFolder = typeof courseFolders.$inferSelect;
+export type InsertCourseFolder = z.infer<typeof insertCourseFolderSchema>;
+export type SharedCourse = typeof sharedCourses.$inferSelect;
+export type InsertSharedCourse = z.infer<typeof insertSharedCourseSchema>;
+export type Certificate = typeof certificates.$inferSelect;
+export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
+export type CustomQuiz = typeof customQuizzes.$inferSelect;
+export type InsertCustomQuiz = z.infer<typeof insertCustomQuizSchema>;

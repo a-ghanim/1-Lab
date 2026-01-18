@@ -8,8 +8,16 @@ import { NotebookChat } from "@/components/NotebookChat";
 import { SourcesPanel } from "@/components/SourcesPanel";
 import { GeneratingLoader } from "@/components/GeneratingLoader";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { ShareCourseDialog } from "@/components/ShareCourseDialog";
+import { ExportPDFButton } from "@/components/ExportPDFButton";
+import { Certificate } from "@/components/Certificate";
+import { CustomQuizForm } from "@/components/CustomQuizForm";
+import { CustomQuizList } from "@/components/CustomQuizList";
+import { NotesPanel } from "@/components/NotesPanel";
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,8 +31,12 @@ import {
   ExternalLink,
   MessageSquare,
   RefreshCw,
+  Plus,
+  HelpCircle,
+  FileText,
+  ChevronDown,
 } from "lucide-react";
-import type { Course, Module, Quiz, Resource, Progress as ProgressType } from "@shared/schema";
+import type { Course, Module, Quiz, Resource, Progress as ProgressType, CustomQuiz } from "@shared/schema";
 
 export default function CourseView() {
   const [, params] = useRoute("/courses/:id");
@@ -37,8 +49,12 @@ export default function CourseView() {
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
+  const [selectedCustomAnswers, setSelectedCustomAnswers] = useState<Record<string, string>>({});
+  const [showCustomFeedback, setShowCustomFeedback] = useState<Record<string, boolean>>({});
   const [completedModules, setCompletedModules] = useState<Set<string>>(new Set());
   const [showChatPanel, setShowChatPanel] = useState(true);
+  const [showCustomQuizForm, setShowCustomQuizForm] = useState(false);
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
   const moduleStartTime = useRef<number>(Date.now());
 
   const { data: courseProgress = [] } = useQuery<ProgressType[]>({
@@ -161,14 +177,32 @@ export default function CourseView() {
     enabled: !!currentModule?.id,
   });
 
+  const { data: customQuizzes = [] } = useQuery<CustomQuiz[]>({
+    queryKey: ["/api/custom-quizzes", currentModule?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/custom-quizzes/${currentModule.id}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!currentModule?.id,
+  });
+
   useEffect(() => {
     setSelectedAnswers({});
     setShowFeedback({});
+    setSelectedCustomAnswers({});
+    setShowCustomFeedback({});
+    setShowCustomQuizForm(false);
   }, [selectedModuleIndex]);
 
   const checkAnswer = (qIndex: number, option: string) => {
     setSelectedAnswers(prev => ({ ...prev, [qIndex]: option }));
     setShowFeedback(prev => ({ ...prev, [qIndex]: true }));
+  };
+
+  const checkCustomAnswer = (quizId: string, option: string) => {
+    setSelectedCustomAnswers(prev => ({ ...prev, [quizId]: option }));
+    setShowCustomFeedback(prev => ({ ...prev, [quizId]: true }));
   };
 
   const goToNextModule = () => {
@@ -247,15 +281,34 @@ export default function CourseView() {
                   Back
                 </button>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowChatPanel(!showChatPanel)}
-                  className="gap-2 lg:hidden"
-                  data-testid="button-toggle-chat"
-                >
-                  <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {courseId && (
+                    <ShareCourseDialog courseId={courseId} courseTitle={course?.title} />
+                  )}
+                  {courseId && course && modules.length > 0 && (
+                    <ExportPDFButton 
+                      courseId={courseId} 
+                      courseTitle={course.title} 
+                      modules={modules} 
+                    />
+                  )}
+                  {courseId && course && modules.length > 0 && (
+                    <Certificate 
+                      courseId={courseId} 
+                      courseTitle={course.title}
+                      isComplete={modules.length > 0 && completedModules.size === modules.length}
+                    />
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowChatPanel(!showChatPanel)}
+                    className="gap-2 lg:hidden"
+                    data-testid="button-toggle-chat"
+                  >
+                    <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex flex-col lg:flex-row gap-8">
@@ -359,7 +412,17 @@ export default function CourseView() {
                           <p className="text-xs text-muted-foreground mb-1">
                             Module {selectedModuleIndex + 1} of {modules.length}
                           </p>
-                          <h2 className="text-2xl font-medium">{currentModule.title}</h2>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-medium">{currentModule.title}</h2>
+                            {courseId && (
+                              <BookmarkButton
+                                moduleId={currentModule.id}
+                                courseId={courseId}
+                                moduleTitle={currentModule.title}
+                                courseTitle={course?.title || ""}
+                              />
+                            )}
+                          </div>
                         </div>
 
                         {isModuleLoading(currentModule) ? (
@@ -428,6 +491,36 @@ export default function CourseView() {
                               )}
                             </div>
 
+                            {/* Notes Panel */}
+                            {courseId && currentModule && (
+                              <Collapsible open={showNotesPanel} onOpenChange={setShowNotesPanel}>
+                                <div className="pt-6 border-t border-border">
+                                  <CollapsibleTrigger asChild>
+                                    <button
+                                      className="w-full flex items-center justify-between py-2 text-left hover:bg-muted/30 transition-colors rounded-sm -mx-2 px-2"
+                                      data-testid="button-toggle-notes"
+                                    >
+                                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                                        <FileText className="w-3 h-3" strokeWidth={1.5} />
+                                        Notes
+                                      </span>
+                                      <ChevronDown
+                                        className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                                          showNotesPanel ? "rotate-180" : ""
+                                        }`}
+                                        strokeWidth={1.5}
+                                      />
+                                    </button>
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent>
+                                    <div className="mt-4 border border-border bg-card/50 rounded-md overflow-hidden min-h-[200px]">
+                                      <NotesPanel moduleId={currentModule.id} courseId={courseId} />
+                                    </div>
+                                  </CollapsibleContent>
+                                </div>
+                              </Collapsible>
+                            )}
+
                             {/* Quiz */}
                             {quizzes.length > 0 && (
                               <div className="pt-6 border-t border-border">
@@ -490,6 +583,100 @@ export default function CourseView() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Custom Questions */}
+                            <div className="pt-6 border-t border-border" data-testid="section-custom-questions">
+                              <div className="flex items-center justify-between mb-4">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                                  <HelpCircle className="w-3 h-3" strokeWidth={1.5} />
+                                  Custom Questions
+                                </p>
+                                {!showCustomQuizForm && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowCustomQuizForm(true)}
+                                    className="gap-2"
+                                    data-testid="button-add-custom-question"
+                                  >
+                                    <Plus className="w-4 h-4" strokeWidth={1.5} />
+                                    Add Question
+                                  </Button>
+                                )}
+                              </div>
+
+                              {showCustomQuizForm && currentModule && (
+                                <div className="mb-6 p-4 border border-border bg-card/50">
+                                  <CustomQuizForm
+                                    moduleId={currentModule.id}
+                                    onSuccess={() => setShowCustomQuizForm(false)}
+                                    onCancel={() => setShowCustomQuizForm(false)}
+                                  />
+                                </div>
+                              )}
+
+                              {customQuizzes.length > 0 ? (
+                                <div className="space-y-6">
+                                  {customQuizzes.map((quiz) => {
+                                    const options = (quiz.options as string[]) || [];
+                                    const letters = ['A', 'B', 'C', 'D'];
+
+                                    return (
+                                      <div key={quiz.id} className="space-y-3" data-testid={`custom-quiz-answer-${quiz.id}`}>
+                                        <p className="font-medium text-sm">{quiz.question}</p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                          {options.map((opt: string, optIdx: number) => {
+                                            const selected = selectedCustomAnswers[quiz.id] === opt;
+                                            const revealed = showCustomFeedback[quiz.id];
+                                            const correct = opt === quiz.correctAnswer;
+
+                                            return (
+                                              <button
+                                                key={opt}
+                                                onClick={() => !revealed && checkCustomAnswer(quiz.id, opt)}
+                                                disabled={revealed}
+                                                className={`p-3 text-left text-sm border transition-colors ${
+                                                  revealed
+                                                    ? correct
+                                                      ? "border-green-500 bg-green-500/10"
+                                                      : selected
+                                                        ? "border-red-500 bg-red-500/10"
+                                                        : "border-border opacity-50"
+                                                    : selected
+                                                      ? "border-foreground bg-foreground/5"
+                                                      : "border-border hover:border-foreground/50"
+                                                }`}
+                                                data-testid={`button-custom-quiz-${quiz.id}-option-${optIdx}`}
+                                              >
+                                                <span className="flex items-center gap-3">
+                                                  <span className="w-5 h-5 flex items-center justify-center text-xs text-muted-foreground">
+                                                    {letters[optIdx]}
+                                                  </span>
+                                                  <span className="flex-1">{opt}</span>
+                                                  {revealed && correct && <Check className="w-4 h-4 text-green-500" />}
+                                                  {revealed && selected && !correct && <X className="w-4 h-4 text-red-500" />}
+                                                </span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                        {showCustomFeedback[quiz.id] && quiz.explanation && (
+                                          <p className="text-xs text-muted-foreground pl-8">
+                                            {quiz.explanation}
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : !showCustomQuizForm && (
+                                <div className="text-center py-4">
+                                  <p className="text-sm text-muted-foreground">
+                                    Create your own questions to test your understanding
+                                  </p>
+                                </div>
+                              )}
+                            </div>
 
                             {/* Resources */}
                             {resources.length > 0 && (

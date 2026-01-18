@@ -738,6 +738,16 @@ Return ONLY valid JSON.`
     }
   });
 
+  app.get("/api/progress/recent", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const recentProgress = await storage.getRecentProgress(user.claims.sub, 10);
+      res.json(recentProgress);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recent progress" });
+    }
+  });
+
   app.get("/api/progress/:courseId", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as any;
@@ -918,6 +928,250 @@ ${sourceContext}`
     }
   });
 
+  // Notes endpoints
+  app.get("/api/notes/:moduleId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const notes = await storage.getNotesByModule(user.claims.sub, req.params.moduleId as string);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch notes" });
+    }
+  });
+
+  app.post("/api/notes", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { moduleId, courseId, content } = req.body;
+      
+      if (!moduleId || !courseId || !content) {
+        return res.status(400).json({ error: "moduleId, courseId, and content are required" });
+      }
+      
+      const note = await storage.createNote({
+        userId: user.claims.sub,
+        moduleId,
+        courseId,
+        content,
+      });
+      
+      res.json(note);
+    } catch (error) {
+      console.error("Create note error:", error);
+      res.status(500).json({ error: "Failed to create note" });
+    }
+  });
+
+  app.put("/api/notes/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { content } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: "content is required" });
+      }
+      
+      const note = await storage.updateNote(req.params.id as string, content);
+      res.json(note);
+    } catch (error) {
+      console.error("Update note error:", error);
+      res.status(500).json({ error: "Failed to update note" });
+    }
+  });
+
+  app.delete("/api/notes/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteNote(req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete note" });
+    }
+  });
+
+  // Bookmarks endpoints
+  app.get("/api/bookmarks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const bookmarks = await storage.getBookmarksByUser(user.claims.sub);
+      res.json(bookmarks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bookmarks" });
+    }
+  });
+
+  app.post("/api/bookmarks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { moduleId, courseId } = req.body;
+      
+      if (!moduleId || !courseId) {
+        return res.status(400).json({ error: "moduleId and courseId are required" });
+      }
+      
+      const isAlreadyBookmarked = await storage.isBookmarked(user.claims.sub, moduleId);
+      if (isAlreadyBookmarked) {
+        return res.status(400).json({ error: "Module is already bookmarked" });
+      }
+      
+      const bookmark = await storage.createBookmark({
+        userId: user.claims.sub,
+        moduleId,
+        courseId,
+      });
+      
+      res.json(bookmark);
+    } catch (error) {
+      console.error("Create bookmark error:", error);
+      res.status(500).json({ error: "Failed to create bookmark" });
+    }
+  });
+
+  app.delete("/api/bookmarks/:moduleId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      await storage.deleteBookmark(user.claims.sub, req.params.moduleId as string);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete bookmark" });
+    }
+  });
+
+  // Achievements endpoints
+  app.get("/api/achievements", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const achievements = await storage.getAchievementsByUser(user.claims.sub);
+      res.json(achievements);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch achievements" });
+    }
+  });
+
+  // Learning goals endpoints
+  app.get("/api/goals", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const goal = await storage.getCurrentGoal(user.claims.sub);
+      res.json(goal);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch learning goal" });
+    }
+  });
+
+  app.put("/api/goals", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { weeklyModulesTarget, weeklyHoursTarget } = req.body;
+      
+      const goal = await storage.updateGoal(user.claims.sub, {
+        weeklyModulesTarget,
+        weeklyHoursTarget,
+      });
+      
+      res.json(goal);
+    } catch (error) {
+      console.error("Update goal error:", error);
+      res.status(500).json({ error: "Failed to update learning goal" });
+    }
+  });
+
+  // Folders endpoints
+  app.get("/api/folders", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const folders = await storage.getFoldersByUser(user.claims.sub);
+      res.json(folders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch folders" });
+    }
+  });
+
+  app.post("/api/folders", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { name, color } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Folder name is required" });
+      }
+      
+      const folder = await storage.createFolder({
+        userId: user.claims.sub,
+        name,
+        color: color || "#6366f1",
+      });
+      
+      res.json(folder);
+    } catch (error) {
+      console.error("Create folder error:", error);
+      res.status(500).json({ error: "Failed to create folder" });
+    }
+  });
+
+  app.put("/api/folders/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { name, color } = req.body;
+      
+      const folder = await storage.updateFolder(req.params.id as string, { name, color });
+      res.json(folder);
+    } catch (error) {
+      console.error("Update folder error:", error);
+      res.status(500).json({ error: "Failed to update folder" });
+    }
+  });
+
+  app.delete("/api/folders/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteFolder(req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete folder" });
+    }
+  });
+
+  app.post("/api/folders/:id/courses", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { courseId } = req.body;
+      
+      if (!courseId) {
+        return res.status(400).json({ error: "courseId is required" });
+      }
+      
+      const courseFolder = await storage.addCourseToFolder(courseId, req.params.id as string);
+      res.json(courseFolder);
+    } catch (error) {
+      console.error("Add course to folder error:", error);
+      res.status(500).json({ error: "Failed to add course to folder" });
+    }
+  });
+
+  app.delete("/api/folders/:id/courses/:courseId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.removeCourseFromFolder(req.params.courseId as string, req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove course from folder" });
+    }
+  });
+
+  app.get("/api/folders/:id/courses", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const courses = await storage.getCoursesByFolder(req.params.id as string);
+      res.json(courses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch courses in folder" });
+    }
+  });
+
+  app.get("/api/course-folder-mappings", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const mappings = await storage.getCourseFolderMappings(user.claims.sub);
+      res.json(mappings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch course folder mappings" });
+    }
+  });
+
   app.delete("/api/user/clear-data", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as { claims: { sub: string } };
@@ -926,6 +1180,254 @@ ${sourceContext}`
     } catch (error) {
       console.error("Clear data error:", error);
       res.status(500).json({ error: "Failed to clear user data" });
+    }
+  });
+
+  // Flashcards - spaced repetition
+  app.get("/api/flashcards/due", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const flashcards = await storage.getFlashcardsDueForReview(user.claims.sub);
+      res.json(flashcards);
+    } catch (error) {
+      console.error("Get due flashcards error:", error);
+      res.status(500).json({ error: "Failed to fetch due flashcards" });
+    }
+  });
+
+  app.get("/api/flashcards/:moduleId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const flashcards = await storage.getFlashcardsByModule(user.claims.sub, req.params.moduleId as string);
+      res.json(flashcards);
+    } catch (error) {
+      console.error("Get flashcards error:", error);
+      res.status(500).json({ error: "Failed to fetch flashcards" });
+    }
+  });
+
+  app.post("/api/flashcards/generate/:moduleId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const moduleId = req.params.moduleId as string;
+      
+      const module = await storage.getModule(moduleId);
+      if (!module) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      
+      const course = await storage.getCourse(module.courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(500).json({ error: "AI service not configured" });
+      }
+      
+      const content = module.content as any;
+      const contentText = JSON.stringify({
+        title: module.title,
+        description: module.description,
+        overview: content?.overview || "",
+        keyPoints: content?.keyPoints || [],
+        detailedExplanation: content?.detailedExplanation || "",
+      });
+      
+      const prompt = `Generate 5-8 flashcards for studying this educational content. Return ONLY valid JSON:
+[
+  { "front": "Question or term", "back": "Answer or definition" }
+]
+
+Content:
+${contentText}`;
+      
+      const response = await generateWithClaude(
+        "You are an expert educator creating flashcards for spaced repetition learning. Create clear, concise question-answer pairs. Return ONLY valid JSON array.",
+        prompt
+      );
+      
+      let flashcardsData;
+      try {
+        const jsonStr = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        flashcardsData = JSON.parse(jsonStr);
+      } catch (e) {
+        return res.status(500).json({ error: "Failed to parse AI response" });
+      }
+      
+      const createdFlashcards = [];
+      for (const card of flashcardsData) {
+        const flashcard = await storage.createFlashcard({
+          userId: user.claims.sub,
+          moduleId: moduleId,
+          courseId: module.courseId,
+          front: card.front,
+          back: card.back,
+        });
+        createdFlashcards.push(flashcard);
+      }
+      
+      res.json(createdFlashcards);
+    } catch (error) {
+      console.error("Generate flashcards error:", error);
+      res.status(500).json({ error: "Failed to generate flashcards" });
+    }
+  });
+
+  app.post("/api/flashcards/:id/review", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { quality } = req.body;
+      
+      if (typeof quality !== 'number' || quality < 0 || quality > 5) {
+        return res.status(400).json({ error: "Quality must be a number between 0 and 5" });
+      }
+      
+      const flashcard = await storage.updateFlashcardAfterReview(req.params.id as string, quality);
+      res.json(flashcard);
+    } catch (error) {
+      console.error("Review flashcard error:", error);
+      res.status(500).json({ error: "Failed to update flashcard" });
+    }
+  });
+
+  app.delete("/api/flashcards/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteFlashcard(req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete flashcard error:", error);
+      res.status(500).json({ error: "Failed to delete flashcard" });
+    }
+  });
+
+  // Shared courses
+  app.post("/api/courses/:id/share", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const courseId = req.params.id as string;
+      
+      const course = await storage.getCourse(courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      if (course.userId !== user.claims.sub) {
+        return res.status(403).json({ error: "Not authorized to share this course" });
+      }
+      
+      const sharedCourse = await storage.createSharedCourse(courseId, user.claims.sub);
+      res.json(sharedCourse);
+    } catch (error) {
+      console.error("Share course error:", error);
+      res.status(500).json({ error: "Failed to share course" });
+    }
+  });
+
+  app.get("/api/shared/:shareCode", async (req: Request, res: Response) => {
+    try {
+      const sharedCourse = await storage.getSharedCourse(req.params.shareCode as string);
+      if (!sharedCourse) {
+        return res.status(404).json({ error: "Shared course not found" });
+      }
+      
+      const course = await storage.getCourse(sharedCourse.courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      const modules = await storage.getModulesByCourse(course.id);
+      
+      res.json({ sharedCourse, course, modules });
+    } catch (error) {
+      console.error("Get shared course error:", error);
+      res.status(500).json({ error: "Failed to fetch shared course" });
+    }
+  });
+
+  app.delete("/api/shared/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteSharedCourse(req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete shared course error:", error);
+      res.status(500).json({ error: "Failed to delete share link" });
+    }
+  });
+
+  // Certificates
+  app.get("/api/certificates/:courseId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const certificate = await storage.getCertificate(user.claims.sub, req.params.courseId as string);
+      res.json(certificate || null);
+    } catch (error) {
+      console.error("Get certificate error:", error);
+      res.status(500).json({ error: "Failed to fetch certificate" });
+    }
+  });
+
+  app.post("/api/certificates/:courseId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const courseId = req.params.courseId as string;
+      
+      const course = await storage.getCourse(courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      const certificate = await storage.createCertificate(user.claims.sub, courseId);
+      res.json(certificate);
+    } catch (error) {
+      console.error("Create certificate error:", error);
+      res.status(500).json({ error: "Failed to create certificate" });
+    }
+  });
+
+  // Custom quizzes
+  app.get("/api/custom-quizzes/:moduleId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const quizzes = await storage.getCustomQuizzesByModule(user.claims.sub, req.params.moduleId as string);
+      res.json(quizzes);
+    } catch (error) {
+      console.error("Get custom quizzes error:", error);
+      res.status(500).json({ error: "Failed to fetch custom quizzes" });
+    }
+  });
+
+  app.post("/api/custom-quizzes", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { moduleId, question, options, correctAnswer, explanation } = req.body;
+      
+      if (!moduleId || !question || !options || !correctAnswer) {
+        return res.status(400).json({ error: "moduleId, question, options, and correctAnswer are required" });
+      }
+      
+      const quiz = await storage.createCustomQuiz({
+        userId: user.claims.sub,
+        moduleId,
+        question,
+        options,
+        correctAnswer,
+        explanation: explanation || null,
+      });
+      
+      res.json(quiz);
+    } catch (error) {
+      console.error("Create custom quiz error:", error);
+      res.status(500).json({ error: "Failed to create custom quiz" });
+    }
+  });
+
+  app.delete("/api/custom-quizzes/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteCustomQuiz(req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete custom quiz error:", error);
+      res.status(500).json({ error: "Failed to delete custom quiz" });
     }
   });
 

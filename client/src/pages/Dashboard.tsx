@@ -21,6 +21,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -43,10 +46,13 @@ import {
   Trash2,
   ArchiveRestore,
   Search,
+  Folder,
+  Check,
 } from "lucide-react";
 import { GenerateButton } from "@/components/GenerateButton";
 import { FluidBackground } from "@/components/FluidBackground";
-import type { Course } from "@shared/schema";
+import { LearningGoalWidget } from "@/components/LearningGoalWidget";
+import type { Course, Folder as FolderType } from "@shared/schema";
 
 type StatusFilter = "all" | "active" | "archived";
 type SortOption = "recent" | "oldest" | "alphabetical";
@@ -73,6 +79,71 @@ export default function Dashboard() {
       return res.json();
     },
   });
+
+  const { data: folders = [] } = useQuery<FolderType[]>({
+    queryKey: ["/api/folders"],
+    queryFn: async () => {
+      const res = await fetch("/api/folders", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch folders");
+      return res.json();
+    },
+  });
+
+  const { data: courseFolderMappings = {} } = useQuery<Record<string, string[]>>({
+    queryKey: ["/api/course-folder-mappings"],
+    queryFn: async () => {
+      const res = await fetch("/api/course-folder-mappings", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch mappings");
+      return res.json();
+    },
+  });
+
+  const addCourseToFolder = useMutation({
+    mutationFn: async ({ courseId, folderId }: { courseId: string; folderId: string }) => {
+      const res = await fetch(`/api/folders/${folderId}/courses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ courseId }),
+      });
+      if (!res.ok) throw new Error("Failed to add course to folder");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/course-folder-mappings"] });
+      toast({ description: "Course added to folder" });
+    },
+    onError: () => {
+      toast({ description: "Failed to add to folder", variant: "destructive" });
+    },
+  });
+
+  const removeCourseFromFolder = useMutation({
+    mutationFn: async ({ courseId, folderId }: { courseId: string; folderId: string }) => {
+      const res = await fetch(`/api/folders/${folderId}/courses/${courseId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to remove course from folder");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/course-folder-mappings"] });
+      toast({ description: "Course removed from folder" });
+    },
+    onError: () => {
+      toast({ description: "Failed to remove from folder", variant: "destructive" });
+    },
+  });
+
+  const getCourseFolders = (courseId: string) => {
+    const folderIds = courseFolderMappings[courseId] || [];
+    return folders.filter(f => folderIds.includes(f.id));
+  };
+
+  const isCourseInFolder = (courseId: string, folderId: string) => {
+    return (courseFolderMappings[courseId] || []).includes(folderId);
+  };
 
   const filteredCourses = useMemo(() => {
     let result = [...allCourses];
@@ -325,6 +396,12 @@ export default function Dashboard() {
               )}
             </AnimatePresence>
 
+            {user && (
+              <div className="w-full max-w-xs">
+                <LearningGoalWidget />
+              </div>
+            )}
+
             <div>
               {coursesLoading ? (
                 <div className="flex items-center justify-center h-48">
@@ -430,6 +507,43 @@ export default function Dashboard() {
                                 <MoreVertical className="w-4 h-4 text-muted-foreground" />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                {folders.length > 0 && (
+                                  <>
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger data-testid={`button-folder-menu-${course.id}`}>
+                                        <Folder className="w-4 h-4 mr-2" />
+                                        Add to folder
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuSubContent>
+                                        {folders.map((folder) => {
+                                          const isInFolder = isCourseInFolder(course.id, folder.id);
+                                          return (
+                                            <DropdownMenuItem
+                                              key={folder.id}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (isInFolder) {
+                                                  removeCourseFromFolder.mutate({ courseId: course.id, folderId: folder.id });
+                                                } else {
+                                                  addCourseToFolder.mutate({ courseId: course.id, folderId: folder.id });
+                                                }
+                                              }}
+                                              data-testid={`folder-option-${folder.id}-${course.id}`}
+                                            >
+                                              <div
+                                                className="w-3 h-3 rounded mr-2"
+                                                style={{ backgroundColor: folder.color || "#6366f1" }}
+                                              />
+                                              <span className="flex-1">{folder.name}</span>
+                                              {isInFolder && <Check className="w-4 h-4 ml-2" />}
+                                            </DropdownMenuItem>
+                                          );
+                                        })}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
                                 {course.archived ? (
                                   <DropdownMenuItem
                                     onClick={(e) => {
@@ -474,8 +588,24 @@ export default function Dashboard() {
                             {course.description || "No description"}
                           </p>
 
-                          <div className="text-xs text-muted-foreground">
-                            {course.totalModules || 0} modules · {course.estimatedHours || 0}h
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-muted-foreground">
+                              {course.totalModules || 0} modules · {course.estimatedHours || 0}h
+                            </span>
+                            {getCourseFolders(course.id).map((folder) => (
+                              <span
+                                key={folder.id}
+                                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded"
+                                style={{ 
+                                  backgroundColor: `${folder.color || "#6366f1"}20`,
+                                  color: folder.color || "#6366f1"
+                                }}
+                                data-testid={`folder-indicator-${folder.id}-${course.id}`}
+                              >
+                                <Folder className="w-2.5 h-2.5" />
+                                {folder.name}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       </div>

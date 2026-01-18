@@ -8,7 +8,10 @@ import {
   Flame,
   User,
   Sun,
-  Moon
+  Moon,
+  Bookmark,
+  Brain,
+  Folder
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -76,6 +79,24 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                       <p className="text-xs text-muted-foreground">{user?.email}</p>
                     </div>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/daily-review" className="flex items-center gap-2 w-full cursor-pointer" data-testid="link-daily-review">
+                        <Brain className="w-4 h-4" />
+                        Daily Review
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/folders" className="flex items-center gap-2 w-full cursor-pointer" data-testid="link-folders">
+                        <Folder className="w-4 h-4" />
+                        Folders
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookmarks" className="flex items-center gap-2 w-full cursor-pointer">
+                        <Bookmark className="w-4 h-4" />
+                        Bookmarks
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/settings" className="flex items-center gap-2 w-full cursor-pointer">
                         <Settings className="w-4 h-4" />

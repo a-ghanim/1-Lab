@@ -11,6 +11,16 @@ import {
   studySessions,
   sources,
   chatMessages,
+  notes,
+  bookmarks,
+  achievements,
+  learningGoals,
+  folders,
+  courseFolders,
+  flashcards,
+  sharedCourses,
+  certificates,
+  customQuizzes,
   type User,
   type LearnerProfile,
   type InsertLearnerProfile,
@@ -32,9 +42,29 @@ import {
   type InsertSource,
   type ChatMessage,
   type InsertChatMessage,
+  type Note,
+  type InsertNote,
+  type Bookmark,
+  type InsertBookmark,
+  type Achievement,
+  type InsertAchievement,
+  type LearningGoal,
+  type InsertLearningGoal,
+  type Folder,
+  type InsertFolder,
+  type CourseFolder,
+  type InsertCourseFolder,
+  type Flashcard,
+  type InsertFlashcard,
+  type SharedCourse,
+  type InsertSharedCourse,
+  type Certificate,
+  type InsertCertificate,
+  type CustomQuiz,
+  type InsertCustomQuiz,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sum, count, sql, isNotNull, inArray } from "drizzle-orm";
+import { eq, and, desc, sum, count, sql, isNotNull, inArray, lte } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (handled by auth module)
@@ -60,6 +90,7 @@ export interface IStorage {
   
   // Progress
   getProgress(userId: string, courseId: string): Promise<Progress[]>;
+  getRecentProgress(userId: string, limit?: number): Promise<Progress[]>;
   updateProgress(data: InsertProgress): Promise<Progress>;
   
   // Quizzes
@@ -100,8 +131,64 @@ export interface IStorage {
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   clearChatHistory(notebookId: string): Promise<void>;
   
+  // Notes
+  getNotesByModule(userId: string, moduleId: string): Promise<Note[]>;
+  getNotesByUser(userId: string): Promise<Note[]>;
+  createNote(note: InsertNote): Promise<Note>;
+  updateNote(id: string, content: string): Promise<Note>;
+  deleteNote(id: string): Promise<void>;
+  
+  // Bookmarks
+  getBookmarksByUser(userId: string): Promise<Bookmark[]>;
+  isBookmarked(userId: string, moduleId: string): Promise<boolean>;
+  createBookmark(bookmark: InsertBookmark): Promise<Bookmark>;
+  deleteBookmark(userId: string, moduleId: string): Promise<void>;
+  
+  // Achievements
+  getAchievementsByUser(userId: string): Promise<Achievement[]>;
+  hasAchievement(userId: string, type: string): Promise<boolean>;
+  unlockAchievement(achievement: InsertAchievement): Promise<Achievement>;
+  checkAndUnlockAchievements(userId: string): Promise<Achievement[]>;
+  
+  // Learning goals
+  getCurrentGoal(userId: string): Promise<LearningGoal | undefined>;
+  updateGoal(userId: string, targets: { weeklyModulesTarget?: number; weeklyHoursTarget?: number }): Promise<LearningGoal>;
+  incrementGoalProgress(userId: string, field: 'modulesCompleted' | 'hoursCompleted', amount: number): Promise<LearningGoal | undefined>;
+  
+  // Folders
+  getFoldersByUser(userId: string): Promise<Folder[]>;
+  createFolder(folder: InsertFolder): Promise<Folder>;
+  updateFolder(id: string, data: Partial<InsertFolder>): Promise<Folder>;
+  deleteFolder(id: string): Promise<void>;
+  addCourseToFolder(courseId: string, folderId: string): Promise<CourseFolder>;
+  removeCourseFromFolder(courseId: string, folderId: string): Promise<void>;
+  getCoursesByFolder(folderId: string): Promise<Course[]>;
+  getFoldersByCourse(courseId: string): Promise<Folder[]>;
+  getCourseFolderMappings(userId: string): Promise<Record<string, string[]>>;
+  
   // User data management
   clearUserData(userId: string): Promise<void>;
+  
+  // Flashcards (spaced repetition)
+  getFlashcardsByModule(userId: string, moduleId: string): Promise<Flashcard[]>;
+  getFlashcardsDueForReview(userId: string): Promise<Flashcard[]>;
+  createFlashcard(flashcard: InsertFlashcard): Promise<Flashcard>;
+  updateFlashcardAfterReview(id: string, quality: number): Promise<Flashcard>;
+  deleteFlashcard(id: string): Promise<void>;
+  
+  // Shared courses
+  getSharedCourse(shareCode: string): Promise<SharedCourse | undefined>;
+  createSharedCourse(courseId: string, userId: string): Promise<SharedCourse>;
+  deleteSharedCourse(id: string): Promise<void>;
+  
+  // Certificates
+  getCertificate(userId: string, courseId: string): Promise<Certificate | undefined>;
+  createCertificate(userId: string, courseId: string): Promise<Certificate>;
+  
+  // Custom quizzes
+  getCustomQuizzesByModule(userId: string, moduleId: string): Promise<CustomQuiz[]>;
+  createCustomQuiz(quiz: InsertCustomQuiz): Promise<CustomQuiz>;
+  deleteCustomQuiz(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -212,6 +299,13 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(progress).where(
       and(eq(progress.userId, userId), eq(progress.courseId, courseId))
     );
+  }
+
+  async getRecentProgress(userId: string, limit: number = 10): Promise<Progress[]> {
+    return db.select().from(progress)
+      .where(and(eq(progress.userId, userId), isNotNull(progress.moduleId)))
+      .orderBy(desc(progress.lastAccessedAt))
+      .limit(limit);
   }
 
   async updateProgress(data: InsertProgress): Promise<Progress> {
@@ -439,6 +533,309 @@ export class DatabaseStorage implements IStorage {
     await db.delete(chatMessages).where(eq(chatMessages.notebookId, notebookId));
   }
 
+  // Notes
+  async getNotesByModule(userId: string, moduleId: string): Promise<Note[]> {
+    return db
+      .select()
+      .from(notes)
+      .where(and(eq(notes.userId, userId), eq(notes.moduleId, moduleId)))
+      .orderBy(desc(notes.createdAt));
+  }
+
+  async getNotesByUser(userId: string): Promise<Note[]> {
+    return db
+      .select()
+      .from(notes)
+      .where(eq(notes.userId, userId))
+      .orderBy(desc(notes.createdAt));
+  }
+
+  async createNote(note: InsertNote): Promise<Note> {
+    const [result] = await db.insert(notes).values(note).returning();
+    return result;
+  }
+
+  async updateNote(id: string, content: string): Promise<Note> {
+    const [result] = await db
+      .update(notes)
+      .set({ content, updatedAt: new Date() })
+      .where(eq(notes.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteNote(id: string): Promise<void> {
+    await db.delete(notes).where(eq(notes.id, id));
+  }
+
+  // Bookmarks
+  async getBookmarksByUser(userId: string): Promise<Bookmark[]> {
+    return db
+      .select()
+      .from(bookmarks)
+      .where(eq(bookmarks.userId, userId))
+      .orderBy(desc(bookmarks.createdAt));
+  }
+
+  async isBookmarked(userId: string, moduleId: string): Promise<boolean> {
+    const [result] = await db
+      .select()
+      .from(bookmarks)
+      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.moduleId, moduleId)));
+    return !!result;
+  }
+
+  async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
+    const [result] = await db.insert(bookmarks).values(bookmark).returning();
+    return result;
+  }
+
+  async deleteBookmark(userId: string, moduleId: string): Promise<void> {
+    await db.delete(bookmarks).where(
+      and(eq(bookmarks.userId, userId), eq(bookmarks.moduleId, moduleId))
+    );
+  }
+
+  // Achievements
+  async getAchievementsByUser(userId: string): Promise<Achievement[]> {
+    return db
+      .select()
+      .from(achievements)
+      .where(eq(achievements.userId, userId))
+      .orderBy(desc(achievements.unlockedAt));
+  }
+
+  async hasAchievement(userId: string, type: string): Promise<boolean> {
+    const [result] = await db
+      .select()
+      .from(achievements)
+      .where(and(eq(achievements.userId, userId), eq(achievements.type, type)));
+    return !!result;
+  }
+
+  async unlockAchievement(achievement: InsertAchievement): Promise<Achievement> {
+    const [result] = await db.insert(achievements).values(achievement).returning();
+    return result;
+  }
+
+  async checkAndUnlockAchievements(userId: string): Promise<Achievement[]> {
+    const unlockedAchievements: Achievement[] = [];
+    
+    const achievementDefinitions = [
+      { type: 'first_course', title: 'First Steps', description: 'Created your first course', icon: '🎓' },
+      { type: 'first_module', title: 'Module Master', description: 'Completed your first module', icon: '📚' },
+      { type: 'streak_3', title: 'On a Roll', description: 'Maintained a 3-day streak', icon: '🔥' },
+      { type: 'streak_7', title: 'Week Warrior', description: 'Maintained a 7-day streak', icon: '⚡' },
+      { type: 'modules_5', title: 'Quick Learner', description: 'Completed 5 modules', icon: '🌟' },
+      { type: 'modules_10', title: 'Knowledge Seeker', description: 'Completed 10 modules', icon: '🏆' },
+      { type: 'hours_5', title: 'Dedicated Student', description: 'Studied for 5 hours', icon: '⏰' },
+      { type: 'courses_3', title: 'Course Collector', description: 'Created 3 courses', icon: '📖' },
+    ];
+
+    const stats = await this.getUserStats(userId);
+    const streak = await this.getStreak(userId);
+    const userCourses = await this.getCoursesByUser(userId);
+
+    for (const def of achievementDefinitions) {
+      const alreadyHas = await this.hasAchievement(userId, def.type);
+      if (alreadyHas) continue;
+
+      let shouldUnlock = false;
+      switch (def.type) {
+        case 'first_course':
+          shouldUnlock = userCourses.length >= 1;
+          break;
+        case 'first_module':
+          shouldUnlock = stats.modulesCompleted >= 1;
+          break;
+        case 'streak_3':
+          shouldUnlock = (streak?.currentStreak || 0) >= 3;
+          break;
+        case 'streak_7':
+          shouldUnlock = (streak?.currentStreak || 0) >= 7;
+          break;
+        case 'modules_5':
+          shouldUnlock = stats.modulesCompleted >= 5;
+          break;
+        case 'modules_10':
+          shouldUnlock = stats.modulesCompleted >= 10;
+          break;
+        case 'hours_5':
+          shouldUnlock = stats.hoursLearned >= 5;
+          break;
+        case 'courses_3':
+          shouldUnlock = userCourses.length >= 3;
+          break;
+      }
+
+      if (shouldUnlock) {
+        const achievement = await this.unlockAchievement({
+          userId,
+          type: def.type,
+          title: def.title,
+          description: def.description,
+          icon: def.icon,
+        });
+        unlockedAchievements.push(achievement);
+      }
+    }
+
+    return unlockedAchievements;
+  }
+
+  // Learning goals
+  async getCurrentGoal(userId: string): Promise<LearningGoal | undefined> {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - dayOfWeek);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const [goal] = await db
+      .select()
+      .from(learningGoals)
+      .where(and(
+        eq(learningGoals.userId, userId),
+        sql`${learningGoals.weekStart} >= ${weekStart}`
+      ))
+      .orderBy(desc(learningGoals.weekStart))
+      .limit(1);
+
+    if (!goal) {
+      const [newGoal] = await db
+        .insert(learningGoals)
+        .values({
+          userId,
+          weekStart,
+          weeklyModulesTarget: 5,
+          weeklyHoursTarget: 5,
+          modulesCompleted: 0,
+          hoursCompleted: 0,
+        })
+        .returning();
+      return newGoal;
+    }
+
+    return goal;
+  }
+
+  async updateGoal(userId: string, targets: { weeklyModulesTarget?: number; weeklyHoursTarget?: number }): Promise<LearningGoal> {
+    const currentGoal = await this.getCurrentGoal(userId);
+    
+    const [result] = await db
+      .update(learningGoals)
+      .set({ ...targets, updatedAt: new Date() })
+      .where(eq(learningGoals.id, currentGoal!.id))
+      .returning();
+    
+    return result;
+  }
+
+  async incrementGoalProgress(userId: string, field: 'modulesCompleted' | 'hoursCompleted', amount: number): Promise<LearningGoal | undefined> {
+    const currentGoal = await this.getCurrentGoal(userId);
+    if (!currentGoal) return undefined;
+
+    const updateData: Record<string, any> = { updatedAt: new Date() };
+    updateData[field] = (currentGoal[field] || 0) + amount;
+
+    const [result] = await db
+      .update(learningGoals)
+      .set(updateData)
+      .where(eq(learningGoals.id, currentGoal.id))
+      .returning();
+
+    return result;
+  }
+
+  // Folders
+  async getFoldersByUser(userId: string): Promise<Folder[]> {
+    return db
+      .select()
+      .from(folders)
+      .where(eq(folders.userId, userId))
+      .orderBy(folders.createdAt);
+  }
+
+  async createFolder(folder: InsertFolder): Promise<Folder> {
+    const [result] = await db.insert(folders).values(folder).returning();
+    return result;
+  }
+
+  async updateFolder(id: string, data: Partial<InsertFolder>): Promise<Folder> {
+    const [result] = await db
+      .update(folders)
+      .set(data)
+      .where(eq(folders.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteFolder(id: string): Promise<void> {
+    await db.delete(courseFolders).where(eq(courseFolders.folderId, id));
+    await db.delete(folders).where(eq(folders.id, id));
+  }
+
+  async addCourseToFolder(courseId: string, folderId: string): Promise<CourseFolder> {
+    const existing = await db
+      .select()
+      .from(courseFolders)
+      .where(and(eq(courseFolders.courseId, courseId), eq(courseFolders.folderId, folderId)));
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [result] = await db.insert(courseFolders).values({ courseId, folderId }).returning();
+    return result;
+  }
+
+  async removeCourseFromFolder(courseId: string, folderId: string): Promise<void> {
+    await db.delete(courseFolders).where(
+      and(eq(courseFolders.courseId, courseId), eq(courseFolders.folderId, folderId))
+    );
+  }
+
+  async getCoursesByFolder(folderId: string): Promise<Course[]> {
+    const result = await db
+      .select({ course: courses })
+      .from(courseFolders)
+      .innerJoin(courses, eq(courseFolders.courseId, courses.id))
+      .where(eq(courseFolders.folderId, folderId));
+    
+    return result.map(r => r.course);
+  }
+
+  async getFoldersByCourse(courseId: string): Promise<Folder[]> {
+    const result = await db
+      .select({ folder: folders })
+      .from(courseFolders)
+      .innerJoin(folders, eq(courseFolders.folderId, folders.id))
+      .where(eq(courseFolders.courseId, courseId));
+    
+    return result.map(r => r.folder);
+  }
+
+  async getCourseFolderMappings(userId: string): Promise<Record<string, string[]>> {
+    const userFolders = await db.select().from(folders).where(eq(folders.userId, userId));
+    const folderIds = userFolders.map(f => f.id);
+    
+    if (folderIds.length === 0) return {};
+    
+    const mappings = await db
+      .select()
+      .from(courseFolders)
+      .where(inArray(courseFolders.folderId, folderIds));
+    
+    const result: Record<string, string[]> = {};
+    for (const mapping of mappings) {
+      if (!result[mapping.courseId]) {
+        result[mapping.courseId] = [];
+      }
+      result[mapping.courseId].push(mapping.folderId);
+    }
+    return result;
+  }
+
   async clearUserData(userId: string): Promise<void> {
     // Get all user's courses first
     const userCourses = await db.select().from(courses).where(eq(courses.userId, userId));
@@ -480,6 +877,131 @@ export class DatabaseStorage implements IStorage {
     
     // Delete learner profile
     await db.delete(learnerProfiles).where(eq(learnerProfiles.userId, userId));
+  }
+
+  // Flashcards (spaced repetition)
+  async getFlashcardsByModule(userId: string, moduleId: string): Promise<Flashcard[]> {
+    return db
+      .select()
+      .from(flashcards)
+      .where(and(eq(flashcards.userId, userId), eq(flashcards.moduleId, moduleId)))
+      .orderBy(flashcards.createdAt);
+  }
+
+  async getFlashcardsDueForReview(userId: string): Promise<Flashcard[]> {
+    const now = new Date();
+    return db
+      .select()
+      .from(flashcards)
+      .where(and(eq(flashcards.userId, userId), lte(flashcards.nextReviewAt, now)))
+      .orderBy(flashcards.nextReviewAt);
+  }
+
+  async createFlashcard(flashcard: InsertFlashcard): Promise<Flashcard> {
+    const [result] = await db.insert(flashcards).values(flashcard).returning();
+    return result;
+  }
+
+  async updateFlashcardAfterReview(id: string, quality: number): Promise<Flashcard> {
+    const [existing] = await db.select().from(flashcards).where(eq(flashcards.id, id));
+    if (!existing) throw new Error("Flashcard not found");
+
+    let { interval, easeFactor, repetitions } = existing;
+    interval = interval || 1;
+    easeFactor = easeFactor || 250;
+    repetitions = repetitions || 0;
+
+    if (quality < 3) {
+      repetitions = 0;
+      interval = 1;
+    } else {
+      repetitions += 1;
+      if (repetitions === 1) {
+        interval = 1;
+      } else if (repetitions === 2) {
+        interval = 6;
+      } else {
+        interval = Math.round(interval * (easeFactor / 100));
+      }
+    }
+
+    easeFactor = easeFactor + (8 - 9 * quality + quality * quality * 0.4);
+    if (easeFactor < 130) easeFactor = 130;
+
+    const nextReviewAt = new Date();
+    nextReviewAt.setDate(nextReviewAt.getDate() + interval);
+
+    const [result] = await db
+      .update(flashcards)
+      .set({ interval, easeFactor: Math.round(easeFactor), repetitions, nextReviewAt })
+      .where(eq(flashcards.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteFlashcard(id: string): Promise<void> {
+    await db.delete(flashcards).where(eq(flashcards.id, id));
+  }
+
+  // Shared courses
+  async getSharedCourse(shareCode: string): Promise<SharedCourse | undefined> {
+    const [result] = await db
+      .select()
+      .from(sharedCourses)
+      .where(eq(sharedCourses.shareCode, shareCode));
+    return result;
+  }
+
+  async createSharedCourse(courseId: string, userId: string): Promise<SharedCourse> {
+    const shareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const [result] = await db
+      .insert(sharedCourses)
+      .values({ courseId, userId, shareCode })
+      .returning();
+    return result;
+  }
+
+  async deleteSharedCourse(id: string): Promise<void> {
+    await db.delete(sharedCourses).where(eq(sharedCourses.id, id));
+  }
+
+  // Certificates
+  async getCertificate(userId: string, courseId: string): Promise<Certificate | undefined> {
+    const [result] = await db
+      .select()
+      .from(certificates)
+      .where(and(eq(certificates.userId, userId), eq(certificates.courseId, courseId)));
+    return result;
+  }
+
+  async createCertificate(userId: string, courseId: string): Promise<Certificate> {
+    const existing = await this.getCertificate(userId, courseId);
+    if (existing) return existing;
+
+    const certificateCode = `CERT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const [result] = await db
+      .insert(certificates)
+      .values({ userId, courseId, certificateCode })
+      .returning();
+    return result;
+  }
+
+  // Custom quizzes
+  async getCustomQuizzesByModule(userId: string, moduleId: string): Promise<CustomQuiz[]> {
+    return db
+      .select()
+      .from(customQuizzes)
+      .where(and(eq(customQuizzes.userId, userId), eq(customQuizzes.moduleId, moduleId)))
+      .orderBy(customQuizzes.createdAt);
+  }
+
+  async createCustomQuiz(quiz: InsertCustomQuiz): Promise<CustomQuiz> {
+    const [result] = await db.insert(customQuizzes).values(quiz).returning();
+    return result;
+  }
+
+  async deleteCustomQuiz(id: string): Promise<void> {
+    await db.delete(customQuizzes).where(eq(customQuizzes.id, id));
   }
 }
 
