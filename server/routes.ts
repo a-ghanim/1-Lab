@@ -2,7 +2,6 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GoogleGenAI } from "@google/genai";
 import { isAuthenticated } from "./replit_integrations/auth";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -20,33 +19,33 @@ async function searchVerifiedResources(topic: string, moduleTitle: string): Prom
   if (!GEMINI_API_KEY) return [];
   
   try {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const model = getGeminiModel(false);
     
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Find 3 real, verified educational resources for learning about "${moduleTitle}" in the context of "${topic}".
-      
-Return ONLY valid JSON array with no markdown:
+    const result = await model.generateContent([
+      `You are a research librarian. Find 3 REAL educational resources for learning about "${moduleTitle}" in the context of "${topic}".
+
+IMPORTANT: Only recommend resources that ACTUALLY EXIST with REAL URLs:
+- MIT OpenCourseWare courses (ocw.mit.edu)
+- Khan Academy videos (khanacademy.org)
+- Coursera/edX courses
+- YouTube educational channels (3Blue1Brown, Veritasium, etc.)
+- Wikipedia articles
+- Academic papers on arXiv
+
+Return ONLY valid JSON array:
 [
-  { "type": "article|paper|video|book|course", "title": "Exact resource title", "author": "Author/Creator name", "url": "Real verified URL", "summary": "Brief 1-2 sentence summary" }
+  { "type": "course|video|article|paper", "title": "Exact real title", "author": "Real author/creator", "url": "Real working URL", "summary": "Brief summary" }
 ]
 
-Requirements:
-- Only include resources with REAL, working URLs
-- Prefer: MIT OpenCourseWare, Khan Academy, Coursera, YouTube educational channels, arXiv papers, university pages
-- Do NOT make up or guess URLs`,
-      config: {
-        tools: [{ google_search: {} }]
-      }
-    });
+If you're not certain a resource exists, DO NOT include it.`
+    ]);
 
-    const text = typeof response.text === 'function' ? response.text() : (response.text || '');
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    const text = result.response.text();
+    if (!text) return [];
+    
+    const jsonMatch = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      const resources = JSON.parse(jsonMatch[0]);
-      if (resources.length > 0) {
-        return resources;
-      }
+      return JSON.parse(jsonMatch[0]);
     }
     return [];
   } catch (e) {
@@ -106,26 +105,34 @@ Rules:
 2. Keep descriptions concise (1-2 sentences each)
 3. Titles should be clear and engaging`;
 
-const MODULE_CONTENT_PROMPT = `You are an expert educator. Generate COMPLETE content for a single module.
+const MODULE_CONTENT_PROMPT = `You are an expert educator creating comprehensive online course content. Generate COMPLETE, SUBSTANTIAL content for a single module.
 
 IMPORTANT: Choose the BEST simulation library for the topic:
 - "matter" for physics with collisions, gravity, forces, mechanics (use Matter.js)
-- "three" for 3D visualizations like molecules, astronomy, 3D geometry (use Three.js)
+- "three" for 3D visualizations like molecules, astronomy, 3D geometry (use Three.js)  
 - "d3" for data visualization, statistics, graphs, networks (use D3.js)
 - "p5" for general 2D animations, art, simple visualizations (use p5.js)
 
 Output Format: Valid JSON only, no markdown code blocks.
 {
-  "content": { "overview": "Detailed module overview (2-3 paragraphs)", "keyPoints": ["point1", "point2", "point3"] },
-  "estimatedMinutes": 30,
+  "content": {
+    "overview": "Comprehensive 3-4 paragraph introduction explaining the topic, its importance, and what the student will learn. Write like a textbook introduction.",
+    "keyPoints": ["Key concept 1 with brief explanation", "Key concept 2 with brief explanation", "Key concept 3", "Key concept 4", "Key concept 5"],
+    "detailedExplanation": "In-depth 4-6 paragraph explanation of the core concepts. Include formulas, definitions, historical context, and real-world applications. This should be the main educational content - thorough and informative like a textbook chapter.",
+    "examples": [
+      { "title": "Example 1 title", "content": "Detailed worked example with step-by-step explanation" },
+      { "title": "Example 2 title", "content": "Another practical example showing application" }
+    ]
+  },
+  "estimatedMinutes": 45,
   "simulationType": "matter|three|d3|p5",
-  "simulationCode": "// Code for the chosen library",
+  "simulationCode": "// Code for the chosen library - must be WORKING, INTERACTIVE visualization",
   "quizzes": [
-    { "question": "...", "options": ["Option A text", "Option B text", "Option C text", "Option D text"], "correctAnswer": "Option A text (MUST be EXACT full text of correct option, NOT a letter)", "explanation": "Why this answer is correct" }
+    { "question": "Thoughtful question testing understanding", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": "Option A (MUST be EXACT full text)", "explanation": "Detailed explanation of why this is correct and why others are wrong" },
+    { "question": "Second question on different aspect", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": "Option B (MUST be EXACT full text)", "explanation": "Educational explanation" },
+    { "question": "Third application question", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": "Option C (MUST be EXACT full text)", "explanation": "Comprehensive explanation" }
   ],
-  "resources": [
-    { "type": "article|paper|video|book", "title": "Resource title", "author": "Author name", "url": "URL", "summary": "Brief summary" }
-  ]
+  "resources": []
 }
 
 Library-specific code patterns:

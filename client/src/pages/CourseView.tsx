@@ -19,9 +19,53 @@ import {
   X,
   FileText,
   Link as LinkIcon,
-  Sparkles
+  Sparkles,
+  Lightbulb,
+  Play,
+  GraduationCap,
+  Target,
+  BookMarked,
+  ExternalLink
 } from "lucide-react";
 import type { Course, Module, Quiz, Resource } from "@shared/schema";
+
+function ContentCard({ 
+  title, 
+  icon: Icon, 
+  children, 
+  className = "",
+  accentColor = "primary"
+}: { 
+  title: string; 
+  icon: React.ElementType; 
+  children: React.ReactNode;
+  className?: string;
+  accentColor?: "primary" | "accent" | "green" | "blue" | "purple";
+}) {
+  const colorClasses = {
+    primary: "text-primary bg-primary/10",
+    accent: "text-accent bg-accent/10",
+    green: "text-green-400 bg-green-400/10",
+    blue: "text-blue-400 bg-blue-400/10",
+    purple: "text-purple-400 bg-purple-400/10"
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`p-6 rounded-2xl bg-card border border-border/50 ${className}`}
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`p-2 rounded-lg ${colorClasses[accentColor]}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <h3 className="text-lg font-semibold">{title}</h3>
+      </div>
+      {children}
+    </motion.div>
+  );
+}
 
 export default function CourseView() {
   const [, params] = useRoute("/courses/:id");
@@ -32,11 +76,8 @@ export default function CourseView() {
   const queryClient = useQueryClient();
 
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(0);
-  const [showCode, setShowCode] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
-  const [generatingModules, setGeneratingModules] = useState<Set<string>>(new Set());
-  const [completedModules, setCompletedModules] = useState<Set<string>>(new Set());
 
   const { data: course, isLoading: courseLoading } = useQuery<Course>({
     queryKey: ["/api/courses", courseId],
@@ -46,6 +87,7 @@ export default function CourseView() {
       return res.json();
     },
     enabled: !!courseId,
+    refetchInterval: isStreaming ? 3000 : false,
   });
 
   const { data: modules = [], isLoading: modulesLoading } = useQuery<Module[]>({
@@ -61,9 +103,7 @@ export default function CourseView() {
 
   const isModuleLoading = useCallback((module: Module) => {
     const content = module.content as any;
-    // Check explicit loading flag - if loading is explicitly false, module is complete
     if (content?.loading === false) return false;
-    // If loading is true or undefined with no content, module is still loading
     return content?.loading === true || (!content?.overview);
   }, []);
 
@@ -101,12 +141,23 @@ export default function CourseView() {
   useEffect(() => {
     setSelectedAnswers({});
     setShowFeedback({});
-    setShowCode(false);
   }, [selectedModuleIndex]);
 
   const checkAnswer = (qIndex: number, option: string) => {
     setSelectedAnswers(prev => ({ ...prev, [qIndex]: option }));
     setShowFeedback(prev => ({ ...prev, [qIndex]: true }));
+  };
+
+  const goToNextModule = () => {
+    if (selectedModuleIndex < modules.length - 1) {
+      setSelectedModuleIndex(selectedModuleIndex + 1);
+    }
+  };
+
+  const goToPrevModule = () => {
+    if (selectedModuleIndex > 0) {
+      setSelectedModuleIndex(selectedModuleIndex - 1);
+    }
   };
 
   if (courseLoading || modulesLoading) {
@@ -134,6 +185,7 @@ export default function CourseView() {
   }
 
   const isGenerating = (course.curriculum as any)?.generating === true || modules.length === 0;
+  const moduleContent = currentModule?.content as any;
 
   return (
     <Layout>
@@ -149,8 +201,10 @@ export default function CourseView() {
           </button>
 
           <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar */}
             <aside className="lg:w-80 shrink-0">
               <div className="sticky top-24 space-y-6">
+                {/* Course Info Card */}
                 <div className="p-6 rounded-2xl bg-card border border-border/50">
                   <h1 className="text-xl font-semibold mb-2">{course.title}</h1>
                   <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
@@ -175,6 +229,7 @@ export default function CourseView() {
                   </div>
                 </div>
 
+                {/* Modules List Card */}
                 <div className="p-4 rounded-2xl bg-card border border-border/50">
                   <div className="flex items-center justify-between mb-4 px-2">
                     <h3 className="font-medium">Modules</h3>
@@ -221,9 +276,6 @@ export default function CourseView() {
                               )}
                             </div>
                             <span className="truncate flex-1">{module.title}</span>
-                            {moduleLoading && (
-                              <span className="text-xs text-accent">...</span>
-                            )}
                           </button>
                         );
                       })
@@ -233,253 +285,303 @@ export default function CourseView() {
               </div>
             </aside>
 
+            {/* Main Content */}
             <main className="flex-1 min-w-0">
-              {isGenerating && !currentModule ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-8"
-                >
-                  <div className="p-12 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
-                    <div className="relative mb-8">
-                      <div className="absolute inset-0 bg-accent/20 rounded-full blur-2xl animate-pulse" />
-                      <div className="relative p-6 rounded-full bg-accent/10">
-                        <Sparkles className="w-12 h-12 text-accent animate-pulse" />
+              <AnimatePresence mode="wait">
+                {isGenerating && !currentModule ? (
+                  <motion.div
+                    key="generating"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="p-12 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
+                      <div className="relative mb-8">
+                        <div className="absolute inset-0 bg-accent/20 rounded-full blur-2xl animate-pulse" />
+                        <div className="relative p-6 rounded-full bg-accent/10">
+                          <Sparkles className="w-12 h-12 text-accent animate-pulse" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-semibold mb-3">Creating your course...</h3>
+                      <p className="text-muted-foreground max-w-lg mb-6">
+                        AI is designing your personalized curriculum with interactive lessons, 
+                        visualizations, and practice exercises.
+                      </p>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                        Generating course outline...
                       </div>
                     </div>
-                    <h3 className="text-2xl font-semibold mb-3">Creating your course...</h3>
-                    <p className="text-muted-foreground max-w-lg mb-6">
-                      AI is designing your personalized curriculum with interactive simulations, 
-                      knowledge checks, and curated resources. This usually takes 1-2 minutes.
-                    </p>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <Loader2 className="w-5 h-5 animate-spin text-accent" />
-                      Generating course outline...
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="h-8 w-64 bg-muted rounded animate-pulse" />
-                    <div className="h-4 w-48 bg-muted/50 rounded animate-pulse" />
-                  </div>
-
-                  <div className="h-80 bg-muted/30 rounded-2xl animate-pulse" />
-                </motion.div>
-              ) : currentModule ? (
-                <motion.div
-                  key={currentModule.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-8"
-                >
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-semibold mb-2">
-                      {currentModule.title}
-                    </h2>
-                    <p className="text-muted-foreground">
-                      {currentModule.description}
-                    </p>
-                  </div>
-
-                  {isModuleLoading(currentModule) ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="space-y-6"
-                    >
-                      <div className="p-8 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
-                        <div className="relative mb-6">
-                          <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl animate-pulse" />
-                          <div className="relative p-4 rounded-full bg-accent/10">
-                            <Sparkles className="w-8 h-8 text-accent animate-pulse" />
-                          </div>
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2">Generating module content...</h3>
-                        <p className="text-sm text-muted-foreground max-w-md">
-                          AI is creating simulations, quizzes, and resources for this module. 
-                          This usually takes 15-30 seconds per module.
+                  </motion.div>
+                ) : currentModule ? (
+                  <motion.div
+                    key={currentModule.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    {/* Module Header */}
+                    <div className="mb-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <span>Module {selectedModuleIndex + 1} of {modules.length}</span>
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-semibold">
+                        {currentModule.title}
+                      </h2>
+                      {currentModule.description && (
+                        <p className="text-muted-foreground mt-2">
+                          {currentModule.description}
                         </p>
-                        <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Please wait...
-                        </div>
-                      </div>
+                      )}
+                    </div>
 
-                      <div className="space-y-4">
-                        <div className="h-6 w-48 bg-muted rounded animate-pulse" />
-                        <div className="h-64 bg-muted/50 rounded-xl animate-pulse" />
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="h-6 w-32 bg-muted rounded animate-pulse" />
-                        <div className="h-24 bg-muted/50 rounded-xl animate-pulse" />
-                        <div className="h-24 bg-muted/50 rounded-xl animate-pulse" />
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <>
-                      {(currentModule.content as any)?.overview && (
-                        <div className="prose prose-invert max-w-none">
-                          <p className="text-foreground/90 leading-relaxed">
-                            {(currentModule.content as any).overview}
+                    {isModuleLoading(currentModule) ? (
+                      /* Loading Skeleton Cards */
+                      <div className="space-y-6">
+                        <div className="p-8 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
+                          <div className="relative mb-6">
+                            <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl animate-pulse" />
+                            <div className="relative p-4 rounded-full bg-accent/10">
+                              <Sparkles className="w-8 h-8 text-accent animate-pulse" />
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">Generating lesson content...</h3>
+                          <p className="text-sm text-muted-foreground max-w-md">
+                            Creating explanations, visualizations, and practice exercises.
                           </p>
-                          {(currentModule.content as any)?.keyPoints && (
-                            <ul className="mt-4 space-y-2">
-                              {(currentModule.content as any).keyPoints.map((point: string, i: number) => (
-                                <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                                  <Check className="w-4 h-4 text-primary mt-1 shrink-0" />
-                                  {point}
+                        </div>
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="p-6 rounded-2xl bg-card border border-border/50">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 rounded-lg bg-muted animate-pulse" />
+                              <div className="h-5 w-32 bg-muted rounded animate-pulse" />
+                            </div>
+                            <div className="space-y-3">
+                              <div className="h-4 bg-muted/50 rounded animate-pulse" />
+                              <div className="h-4 bg-muted/50 rounded animate-pulse w-3/4" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* Content Cards Grid */
+                      <div className="grid gap-6">
+                        {/* Overview Card */}
+                        {moduleContent?.overview && (
+                          <ContentCard title="Overview" icon={BookMarked} accentColor="primary">
+                            <p className="text-foreground/90 leading-relaxed whitespace-pre-line">
+                              {moduleContent.overview}
+                            </p>
+                          </ContentCard>
+                        )}
+
+                        {/* Key Concepts Card */}
+                        {moduleContent?.keyPoints && moduleContent.keyPoints.length > 0 && (
+                          <ContentCard title="Key Concepts" icon={Lightbulb} accentColor="accent">
+                            <ul className="space-y-3">
+                              {moduleContent.keyPoints.map((point: string, i: number) => (
+                                <li key={i} className="flex items-start gap-3">
+                                  <div className="mt-1 p-1 rounded-full bg-accent/20">
+                                    <Check className="w-3 h-3 text-accent" />
+                                  </div>
+                                  <span className="text-foreground/80">{point}</span>
                                 </li>
                               ))}
                             </ul>
+                          </ContentCard>
+                        )}
+
+                        {/* Detailed Explanation Card */}
+                        {moduleContent?.detailedExplanation && (
+                          <ContentCard title="Deep Dive" icon={GraduationCap} accentColor="blue">
+                            <div className="prose prose-invert prose-sm max-w-none">
+                              <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
+                                {moduleContent.detailedExplanation}
+                              </p>
+                            </div>
+                          </ContentCard>
+                        )}
+
+                        {/* Examples Card */}
+                        {moduleContent?.examples && moduleContent.examples.length > 0 && (
+                          <ContentCard title="Examples" icon={Target} accentColor="green">
+                            <div className="space-y-4">
+                              {moduleContent.examples.map((example: any, i: number) => (
+                                <div key={i} className="p-4 rounded-xl bg-muted/30 border border-border/30">
+                                  {typeof example === 'string' ? (
+                                    <p className="text-foreground/80">{example}</p>
+                                  ) : (
+                                    <>
+                                      {example.title && (
+                                        <h4 className="font-medium mb-2">{example.title}</h4>
+                                      )}
+                                      <p className="text-foreground/80">{example.content || example.description}</p>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </ContentCard>
+                        )}
+
+                        {/* Interactive Simulation Card */}
+                        <ContentCard title="Interactive Visualization" icon={Play} accentColor="purple">
+                          <UnifiedSimulation
+                            topic={`${course?.title || ''} ${currentModule.title} ${currentModule.description || ''}`}
+                            type={(currentModule as any).simulationType || "auto"}
+                            code={currentModule.simulationCode}
+                            title={currentModule.title}
+                          />
+                        </ContentCard>
+
+                        {/* Knowledge Check Card */}
+                        {quizzes.length > 0 && (
+                          <ContentCard title="Knowledge Check" icon={Zap} accentColor="accent">
+                            <div className="space-y-6">
+                              {quizzes.map((quiz, idx) => {
+                                const options = (quiz.options as string[]) || [];
+                                const letterIndex = ['A', 'B', 'C', 'D'];
+                                const correctAnswerText = letterIndex.includes(quiz.correctAnswer)
+                                  ? options[letterIndex.indexOf(quiz.correctAnswer)]
+                                  : quiz.correctAnswer;
+                                
+                                return (
+                                  <div key={quiz.id} className="space-y-4">
+                                    <p className="font-medium">{idx + 1}. {quiz.question}</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      {options.map((opt: string, optIdx: number) => {
+                                        const isSelected = selectedAnswers[idx] === opt;
+                                        const showResult = showFeedback[idx];
+                                        const isCorrect = opt === correctAnswerText;
+
+                                        return (
+                                          <button
+                                            key={opt}
+                                            onClick={() => !showResult && checkAnswer(idx, opt)}
+                                            disabled={showResult}
+                                            className={`p-4 rounded-xl text-left text-sm transition-all ${
+                                              showResult
+                                                ? isCorrect
+                                                  ? "bg-green-500/20 border-2 border-green-500/50"
+                                                  : isSelected
+                                                    ? "bg-red-500/20 border-2 border-red-500/50"
+                                                    : "bg-muted/30 border border-border/30 opacity-50"
+                                                : isSelected
+                                                  ? "bg-primary/10 border-2 border-primary/50"
+                                                  : "bg-muted/30 border border-border/30 hover:bg-muted/50 hover:border-border/50"
+                                            }`}
+                                            data-testid={`button-quiz-${idx}-option-${optIdx}`}
+                                          >
+                                            <span className="flex items-center gap-3">
+                                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                                                {letterIndex[optIdx]}
+                                              </span>
+                                              {showResult && isCorrect && <Check className="w-4 h-4 text-green-400 ml-auto" />}
+                                              {showResult && isSelected && !isCorrect && <X className="w-4 h-4 text-red-400 ml-auto" />}
+                                              <span className="flex-1">{opt}</span>
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                    {showFeedback[idx] && quiz.explanation && (
+                                      <div className="p-4 rounded-xl bg-muted/30 border border-border/30">
+                                        <p className="text-sm text-muted-foreground">
+                                          <span className="font-medium text-foreground">Explanation: </span>
+                                          {quiz.explanation}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {idx < quizzes.length - 1 && (
+                                      <div className="border-t border-border/30 pt-4" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </ContentCard>
+                        )}
+
+                        {/* Resources Card */}
+                        {resources.length > 0 && (
+                          <ContentCard title="Further Reading" icon={FileText} accentColor="primary">
+                            <div className="grid gap-3">
+                              {resources.map((resource) => (
+                                <a
+                                  key={resource.id}
+                                  href={resource.url || "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-start gap-4 p-4 rounded-xl bg-muted/30 border border-border/30 hover:bg-muted/50 hover:border-primary/30 transition-all group"
+                                >
+                                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                    <ExternalLink className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-sm group-hover:text-primary transition-colors">
+                                      {resource.title}
+                                    </h4>
+                                    {resource.author && (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        by {resource.author}
+                                      </p>
+                                    )}
+                                    {resource.summary && (
+                                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                        {resource.summary}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground capitalize shrink-0">
+                                    {resource.type}
+                                  </span>
+                                </a>
+                              ))}
+                            </div>
+                          </ContentCard>
+                        )}
+
+                        {/* Navigation */}
+                        <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                          <Button
+                            onClick={goToPrevModule}
+                            disabled={selectedModuleIndex === 0}
+                            variant="outline"
+                            className="gap-2"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            Previous
+                          </Button>
+                          
+                          {selectedModuleIndex < modules.length - 1 ? (
+                            <Button
+                              onClick={goToNextModule}
+                              className="gap-2"
+                            >
+                              Next Module
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => navigate("/dashboard")}
+                              className="gap-2 bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Complete Course
+                            </Button>
                           )}
                         </div>
-                      )}
-
-                      <UnifiedSimulation
-                        topic={`${course?.title || ''} ${currentModule.title} ${currentModule.description || ''}`}
-                        type={(currentModule as any).simulationType || "auto"}
-                        code={currentModule.simulationCode}
-                        title={currentModule.title}
-                      />
-
-                  {quizzes.length > 0 && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-accent" />
-                        Knowledge Check
-                      </h3>
-                      
-                      <div className="space-y-4">
-                        {quizzes.map((quiz, idx) => {
-                          const options = (quiz.options as string[]) || [];
-                          // Handle correctAnswer being either a letter (A/B/C/D) or full text
-                          const letterIndex = ['A', 'B', 'C', 'D'];
-                          const correctAnswerText = letterIndex.includes(quiz.correctAnswer)
-                            ? options[letterIndex.indexOf(quiz.correctAnswer)]
-                            : quiz.correctAnswer;
-                          return (
-                            <div
-                              key={quiz.id}
-                              className="p-6 rounded-2xl bg-card border border-border/50"
-                            >
-                              <p className="font-medium mb-4">{quiz.question}</p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {options.map((opt: string) => {
-                                  const isSelected = selectedAnswers[idx] === opt;
-                                  const showResult = showFeedback[idx];
-                                  const isCorrect = opt === correctAnswerText;
-
-                                  return (
-                                    <button
-                                      key={opt}
-                                      onClick={() => !showResult && checkAnswer(idx, opt)}
-                                      disabled={showResult}
-                                      className={`p-3 rounded-xl text-left text-sm font-medium transition-all ${
-                                        showResult
-                                          ? isCorrect
-                                            ? "bg-green-500/20 border border-green-500/50"
-                                            : isSelected
-                                              ? "bg-red-500/20 border border-red-500/50"
-                                              : "bg-muted/50 border border-border/50 opacity-50"
-                                          : isSelected
-                                            ? "bg-primary/10 border border-primary/30"
-                                            : "bg-muted/50 border border-border/50 hover:bg-muted hover:border-border"
-                                      }`}
-                                      data-testid={`button-quiz-${idx}-option`}
-                                    >
-                                      <span className="flex items-center gap-2">
-                                        {showResult && isCorrect && <Check className="w-4 h-4 text-green-400" />}
-                                        {showResult && isSelected && !isCorrect && <X className="w-4 h-4 text-red-400" />}
-                                        {opt}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                              {showFeedback[idx] && quiz.explanation && (
-                                <p className="mt-4 text-sm text-muted-foreground border-t border-border/50 pt-4">
-                                  {quiz.explanation}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
                       </div>
-                    </div>
-                  )}
-
-                  {resources.length > 0 && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-primary" />
-                        Resources
-                      </h3>
-                      <div className="space-y-3">
-                        {resources.map((resource) => (
-                          <a
-                            key={resource.id}
-                            href={resource.url || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-start gap-4 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors group"
-                          >
-                            <div className="p-2 rounded-lg bg-muted">
-                              <LinkIcon className="w-4 h-4 text-muted-foreground" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm group-hover:text-primary transition-colors">
-                                {resource.title}
-                              </h4>
-                              {resource.author && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  by {resource.author}
-                                </p>
-                              )}
-                              {resource.summary && (
-                                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                  {resource.summary}
-                                </p>
-                              )}
-                            </div>
-                            <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground capitalize">
-                              {resource.type}
-                            </span>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                      <div className="flex items-center justify-between pt-6 border-t border-border/50">
-                        <Button
-                          variant="outline"
-                          onClick={() => setSelectedModuleIndex(Math.max(0, selectedModuleIndex - 1))}
-                          disabled={selectedModuleIndex === 0}
-                          className="gap-2"
-                          data-testid="button-prev-module"
-                        >
-                          <ArrowLeft className="w-4 h-4" />
-                          Previous
-                        </Button>
-                        <Button
-                          onClick={() => setSelectedModuleIndex(Math.min(modules.length - 1, selectedModuleIndex + 1))}
-                          disabled={selectedModuleIndex === modules.length - 1}
-                          className="btn-primary gap-2"
-                          data-testid="button-next-module"
-                        >
-                          Next
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </motion.div>
-              ) : (
-                <div className="flex items-center justify-center h-64">
-                  <p className="text-muted-foreground">No modules available</p>
-                </div>
-              )}
+                    )}
+                  </motion.div>
+                ) : (
+                  <div className="flex items-center justify-center py-20">
+                    <p className="text-muted-foreground">Select a module to begin</p>
+                  </div>
+                )}
+              </AnimatePresence>
             </main>
           </div>
         </div>
