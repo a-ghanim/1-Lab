@@ -253,13 +253,23 @@ export default function Landing() {
           </div>
         </div>
         
-        <div className="relative -mb-[0.1em] w-full">
-          <div 
-            className="text-[22vw] md:text-[18vw] font-medium leading-none tracking-[-0.04em] text-background/[0.08] select-none text-center"
-            style={{ fontFamily: "Inter, system-ui, sans-serif" }}
-          >
-            one breath lab
-          </div>
+        <div className="relative -mb-[0.1em] w-full overflow-hidden">
+          <svg viewBox="0 0 100 10" className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+            <text 
+              x="50" 
+              y="8" 
+              textAnchor="middle" 
+              className="fill-background/[0.08]"
+              style={{ 
+                fontFamily: "Inter, system-ui, sans-serif",
+                fontSize: "7.5px",
+                fontWeight: 500,
+                letterSpacing: "-0.02em"
+              }}
+            >
+              one breath lab
+            </text>
+          </svg>
         </div>
         
         <div className="border-t border-background/10 py-4">
