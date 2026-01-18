@@ -37,9 +37,10 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
       <NoiseOverlay opacity={0.04} />
       
-      <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-6 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xl font-bold tracking-tight">1Lab</span>
+      <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-5 border-b border-border bg-background/80 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 bg-foreground" />
+          <span className="font-semibold tracking-tight">1Lab</span>
         </div>
 
         <Button 
@@ -248,11 +249,12 @@ export default function Landing() {
       </main>
 
       <footer className="relative z-10 border-t border-border bg-foreground text-background overflow-hidden">
-        <div className="px-6 md:px-12 lg:px-20 pt-16 pb-8">
-          <div className="mb-3">
-            <span className="text-xl font-bold tracking-tight">1Lab</span>
+        <div className="px-6 md:px-12 lg:px-20 pt-12 pb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-4 h-4 bg-background" />
+            <span className="font-semibold tracking-tight">1Lab</span>
           </div>
-          <p className="text-sm text-background/50 max-w-sm">
+          <p className="text-sm text-background/50">
             Turn any topic into a classroom.
           </p>
         </div>
