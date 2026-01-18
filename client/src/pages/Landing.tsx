@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Upload, Sparkles, FileText, GraduationCap } from "lucide-react";
+import { ArrowRight, BookOpen, Brain, MessageSquare, Target, Zap, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NoiseOverlay } from "@/components/NoiseOverlay";
+import { BentoCard } from "@/components/BentoCard";
+import heroBg from "@/assets/hero-bg.jpg";
 
 export default function Landing() {
   const handleLogin = () => {
@@ -10,7 +12,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
-      <NoiseOverlay opacity={0.03} />
+      <NoiseOverlay opacity={0.04} />
       
       <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-6 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2">
@@ -28,296 +30,197 @@ export default function Landing() {
         </Button>
       </header>
 
-      {/* Hero Section - NotebookLM style */}
-      <section className="relative z-10 pt-20 md:pt-32 pb-16 md:pb-24 px-6 md:px-12 lg:px-20 overflow-hidden">
-        {/* Ambient background glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] opacity-30 dark:opacity-20 blur-3xl"
-            style={{
-              background: "radial-gradient(ellipse at center, rgba(74, 222, 128, 0.3) 0%, rgba(34, 211, 238, 0.2) 40%, rgba(167, 139, 250, 0.1) 70%, transparent 100%)"
-            }}
-          />
-        </div>
-        
-        <div className="max-w-4xl mx-auto text-center relative">
-          <motion.h1 
-            className="text-5xl md:text-6xl lg:text-7xl leading-[1.1] tracking-[-0.02em] mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="font-medium">Understand </span>
-            <motion.span 
-              className="italic text-transparent bg-clip-text inline-block"
-              style={{ 
-                backgroundImage: "linear-gradient(135deg, #4ade80 0%, #22d3ee 50%, #a78bfa 100%)",
-              }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              Anything
-            </motion.span>
-          </motion.h1>
-
-          <motion.p 
-            className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            Your AI-powered research partner. Upload your sources, ask questions, and generate complete courses—all grounded in information you trust.
-          </motion.p>
-
+      {/* Full-width Hero */}
+      <div 
+        className="relative min-h-[85vh] md:min-h-[90vh] flex items-end"
+        style={{
+          backgroundImage: `url(${heroBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 pb-16 md:pb-24">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="max-w-3xl"
           >
-            <Button 
+            <motion.h1 
+              className="text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.05] tracking-[-0.02em] mb-8 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              Learn anything.<br />
+              One breath at a time.
+            </motion.h1>
+
+            <motion.p 
+              className="text-xl md:text-2xl text-white/70 mb-12 leading-relaxed max-w-xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
+            </motion.p>
+
+            <motion.button
               onClick={handleLogin}
-              className="bg-foreground text-background hover:bg-foreground/90 px-8 py-6 text-base rounded-full shadow-lg hover:shadow-xl transition-shadow"
+              className="group relative inline-flex items-center justify-center"
               data-testid="button-get-started"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              Try One Breath Lab
-            </Button>
+              <div 
+                className="absolute inset-0 rounded-full opacity-90 group-hover:opacity-100 transition-all duration-300"
+                style={{
+                  background: "linear-gradient(135deg, #a78bfa, #60a5fa, #34d399, #fbbf24, #f472b6)",
+                  padding: "2px",
+                }}
+              />
+              <div className="relative flex items-center gap-3 bg-black/90 backdrop-blur-sm rounded-full px-10 py-5 m-[2px]">
+                <span className="text-lg font-medium text-white">Start learning</span>
+                <ArrowRight className="w-5 h-5 text-white -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" strokeWidth={1.5} />
+              </div>
+            </motion.button>
           </motion.div>
         </div>
-      </section>
+      </div>
 
-      {/* Section Header */}
-      <section className="relative z-10 py-16 md:py-24 px-6 md:px-12 lg:px-20 border-t border-border">
-        <div className="max-w-4xl mx-auto text-center mb-20">
-          <h2 className="text-3xl md:text-4xl font-medium mb-4">
-            Your AI-Powered Research Partner
-          </h2>
-        </div>
-
-        {/* Feature 1: Upload Sources */}
+      <main className="relative z-10 px-6 md:px-12 lg:px-20">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center mb-32">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                <Upload className="w-5 h-5" strokeWidth={1.5} />
-                <span className="text-sm uppercase tracking-wider">Step 1</span>
-              </div>
-              <h3 className="text-2xl md:text-3xl font-medium mb-4">
-                Upload your sources
-              </h3>
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                PDFs, articles, YouTube links, notes—anything you're learning from. One Breath Lab will read it all and find the connections between your sources.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative"
-            >
-              <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 rounded-2xl p-6 aspect-[4/3] flex flex-col shadow-2xl">
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-14 h-14 bg-amber-500/20 rounded-xl flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
-                      <GraduationCap className="w-7 h-7 text-amber-400" strokeWidth={1.5} />
+
+          {/* Bento Grid */}
+          <div className="pt-24 md:pt-32 pb-24 md:pb-32">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Large feature card */}
+              <BentoCard 
+                variant="lemon" 
+                size="lg" 
+                className="md:col-span-2 lg:col-span-2"
+                delay={0}
+              >
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 bg-yellow-500/10">
+                      <Layers className="w-5 h-5 text-yellow-600 dark:text-yellow-400" strokeWidth={1.5} />
                     </div>
-                    <div className="text-xs text-zinc-400 mb-1">Notebook</div>
-                    <div className="text-2xl font-semibold text-white tracking-tight">LIT 300</div>
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">Core concept</span>
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-medium mb-4">
+                    Sources become curriculum
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-lg">
+                    Every paper, article, and note you add becomes part of a living knowledge base. AI doesn't just search—it structures your understanding into modules that build on each other.
+                  </p>
+                </div>
+              </BentoCard>
+
+              {/* Tall card */}
+              <BentoCard 
+                variant="rose" 
+                size="md"
+                className="lg:row-span-2"
+                delay={0.1}
+              >
+                <div className="h-full flex flex-col">
+                  <div className="p-2.5 bg-rose-500/10 w-fit mb-6">
+                    <Brain className="w-5 h-5 text-rose-600 dark:text-rose-400" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-xl font-medium mb-3">Mental models, not answers</h3>
+                  <p className="text-muted-foreground leading-relaxed flex-1">
+                    Chat interfaces give you responses. We help you build frameworks for thinking. Every concept connects to what you already know.
+                  </p>
+                  <div className="mt-6 pt-6 border-t border-rose-200/40 dark:border-rose-400/20">
+                    <div className="text-4xl font-medium mb-1">4x</div>
+                    <div className="text-sm text-muted-foreground">better retention vs passive reading</div>
                   </div>
                 </div>
-                <div className="flex gap-2 pt-4 border-t border-zinc-700">
-                  <div className="flex-1 h-2 bg-emerald-500/30 rounded-full" />
-                  <div className="flex-1 h-2 bg-zinc-700 rounded-full" />
-                  <div className="flex-1 h-2 bg-zinc-700 rounded-full" />
+              </BentoCard>
+
+              {/* Medium cards */}
+              <BentoCard variant="sky" size="md" delay={0.15}>
+                <div className="p-2.5 bg-sky-500/10 w-fit mb-5">
+                  <BookOpen className="w-5 h-5 text-sky-600 dark:text-sky-400" strokeWidth={1.5} />
                 </div>
-              </div>
-            </motion.div>
+                <h3 className="text-lg font-medium mb-2">Collect sources</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Papers, articles, videos, notes—anything you're learning from. Build your personal research library.
+                </p>
+              </BentoCard>
+
+              <BentoCard variant="mint" size="md" delay={0.2}>
+                <div className="p-2.5 bg-emerald-500/10 w-fit mb-5">
+                  <MessageSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Cited conversations</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Every AI response points back to your sources. You're not trusting a black box.
+                </p>
+              </BentoCard>
+
+              {/* Bottom row */}
+              <BentoCard variant="peach" size="md" delay={0.25}>
+                <div className="p-2.5 bg-orange-500/10 w-fit mb-5">
+                  <Target className="w-5 h-5 text-orange-600 dark:text-orange-400" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Progress tracking</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Quizzes test understanding. Streaks build habits. Watch your knowledge compound.
+                </p>
+              </BentoCard>
+
+              <BentoCard 
+                variant="lavender" 
+                size="md"
+                className="md:col-span-2"
+                delay={0.3}
+              >
+                <div>
+                  <div className="p-2.5 bg-violet-500/10 w-fit mb-5">
+                    <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">AI-generated courses</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Enter any topic. Get a structured curriculum with modules, key concepts, examples, and knowledge checks—in seconds.
+                  </p>
+                </div>
+              </BentoCard>
+            </div>
           </div>
 
-          {/* Feature 2: Instant Insights */}
-          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center mb-32">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative order-2 md:order-1"
-            >
-              <div className="bg-white dark:bg-zinc-900 border border-border rounded-2xl p-6 aspect-[4/3] shadow-xl">
-                <div className="flex flex-wrap gap-3 justify-center items-center h-full">
-                  <motion.div 
-                    className="bg-gradient-to-r from-pink-200 to-rose-200 dark:from-pink-900/50 dark:to-rose-900/50 text-pink-800 dark:text-pink-200 px-5 py-2.5 rounded-full text-sm font-medium shadow-sm"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    Instant study guide
-                  </motion.div>
-                  <div className="flex gap-3 w-full justify-center">
-                    <motion.div 
-                      className="bg-muted hover:bg-muted/80 px-4 py-2 rounded-full text-sm flex items-center gap-2 cursor-pointer transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <span className="text-lg leading-none">+</span> Add note
-                    </motion.div>
-                  </div>
-                  <div className="flex gap-3 w-full justify-center flex-wrap">
-                    <motion.div 
-                      className="bg-muted hover:bg-muted/80 px-4 py-2 rounded-full text-sm flex items-center gap-2 cursor-pointer transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <FileText className="w-4 h-4" /> Study guide
-                    </motion.div>
-                    <motion.div 
-                      className="bg-muted hover:bg-muted/80 px-4 py-2 rounded-full text-sm flex items-center gap-2 cursor-pointer transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <FileText className="w-4 h-4" /> Briefing doc
-                    </motion.div>
-                  </div>
-                  <div className="flex gap-3">
-                    <motion.div 
-                      className="bg-muted hover:bg-muted/80 px-4 py-2 rounded-full text-sm cursor-pointer transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      FAQ
-                    </motion.div>
-                    <motion.div 
-                      className="bg-muted hover:bg-muted/80 px-4 py-2 rounded-full text-sm cursor-pointer transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      Timeline
-                    </motion.div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="order-1 md:order-2"
-            >
-              <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                <Sparkles className="w-5 h-5" strokeWidth={1.5} />
-                <span className="text-sm uppercase tracking-wider">Step 2</span>
-              </div>
-              <h3 className="text-2xl md:text-3xl font-medium mb-4">
-                Instant insights
-              </h3>
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                With all of your sources in place, One Breath Lab gets to work and becomes a personalized AI expert in the information that matters most to you.
-              </p>
-            </motion.div>
-          </div>
-
-          {/* Feature 3: See the source */}
-          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                <FileText className="w-5 h-5" strokeWidth={1.5} />
-                <span className="text-sm uppercase tracking-wider">Step 3</span>
-              </div>
-              <h3 className="text-2xl md:text-3xl font-medium mb-4">
-                See the source, not just the answer
-              </h3>
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                Gain confidence in every response. Click any citation to jump straight to the relevant passage in your original sources.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative"
-            >
-              <div className="relative rounded-2xl aspect-[4/3] overflow-hidden shadow-2xl">
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(251, 191, 36, 0.4) 0%, rgba(16, 185, 129, 0.4) 50%, rgba(59, 130, 246, 0.4) 100%)"
-                  }}
-                />
-                <div className="absolute inset-0 backdrop-blur-sm" />
-                <div className="relative h-full flex items-center justify-center p-6">
-                  <motion.div 
-                    className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-white/20 rounded-xl p-5 max-w-xs shadow-lg"
-                    initial={{ y: 10, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-9 h-9 bg-sky-500/20 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium block">Source [1]</span>
-                        <span className="text-xs text-muted-foreground">Chapter 3, Page 42</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-foreground/80 leading-relaxed italic">
-                      "The key insight here is that understanding compounds over time, building on previous knowledge..."
-                    </p>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="relative z-10 py-20 md:py-32 px-6 md:px-12 lg:px-20 border-t border-border">
-        <div className="max-w-2xl mx-auto text-center">
-          <motion.h2 
-            className="text-3xl md:text-4xl font-medium mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            Ready to understand anything?
-          </motion.h2>
-          <motion.p 
-            className="text-muted-foreground mb-10 text-lg"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-          >
-            Start with your first notebook—it's free.
-          </motion.p>
+          {/* CTA Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
+            transition={{ duration: 0.4 }}
+            className="py-20 border-t border-border"
           >
-            <Button 
-              onClick={handleLogin}
-              className="bg-foreground text-background hover:bg-foreground/90 px-8 py-6 text-base rounded-full"
-              data-testid="button-signup-cta"
-            >
-              Get started
-              <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
-            </Button>
+            <div className="max-w-xl">
+              <h2 className="text-2xl md:text-3xl font-medium mb-4">
+                For the deeply curious
+              </h2>
+              <p className="text-muted-foreground mb-8 leading-relaxed">
+                Students tired of passive reading. Researchers drowning in papers. Autodidacts who want structure without hand-holding.
+              </p>
+              <Button 
+                onClick={handleLogin}
+                className="btn-primary"
+                data-testid="button-signup-cta"
+              >
+                Start your first course
+                <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
+              </Button>
+            </div>
           </motion.div>
         </div>
-      </section>
+      </main>
 
       <footer className="relative z-10 border-t border-border bg-foreground text-background overflow-hidden">
         <div className="px-6 md:px-12 lg:px-20 pt-16 pb-8">
