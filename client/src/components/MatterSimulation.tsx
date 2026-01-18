@@ -8,6 +8,18 @@ interface MatterSimulationProps {
   title?: string;
 }
 
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+  };
+  return text.replace(/&amp;|&lt;|&gt;|&quot;|&#39;|&apos;/g, match => entities[match] || match);
+}
+
 export function MatterSimulation({ code, title }: MatterSimulationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
@@ -57,13 +69,14 @@ export function MatterSimulation({ code, title }: MatterSimulationProps) {
       });
       renderRef.current = render;
 
+      const decodedCode = decodeHtmlEntities(code);
       const executeSimulation = new Function(
         "Matter",
         "engine",
         "render",
         "width",
         "height",
-        code
+        decodedCode
       );
       executeSimulation(Matter, engine, render, width, height);
 

@@ -12,6 +12,18 @@ interface SimulationRunnerProps {
   className?: string;
 }
 
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+  };
+  return text.replace(/&amp;|&lt;|&gt;|&quot;|&#39;|&apos;/g, match => entities[match] || match);
+}
+
 export function SimulationRunner({ code, className }: SimulationRunnerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const p5InstanceRef = useRef<any>(null);
@@ -29,7 +41,8 @@ export function SimulationRunner({ code, className }: SimulationRunnerProps) {
     setIsLoaded(false);
 
     try {
-      const sketchFunction = new Function('p', code);
+      const decodedCode = decodeHtmlEntities(code);
+      const sketchFunction = new Function('p', decodedCode);
       
       if (window.p5) {
         p5InstanceRef.current = new window.p5(sketchFunction, containerRef.current);

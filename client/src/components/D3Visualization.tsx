@@ -8,6 +8,18 @@ interface D3VisualizationProps {
   title?: string;
 }
 
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+  };
+  return text.replace(/&amp;|&lt;|&gt;|&quot;|&#39;|&apos;/g, match => entities[match] || match);
+}
+
 export function D3Visualization({ code, title }: D3VisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,14 +44,17 @@ export function D3Visualization({ code, title }: D3VisualizationProps) {
         .style("background", "#1a1a2e")
         .style("border-radius", "12px");
 
+      const decodedCode = decodeHtmlEntities(code);
+      
       const executeVisualization = new Function(
         "d3",
         "svg",
         "width",
         "height",
-        code
+        "container",
+        decodedCode
       );
-      executeVisualization(d3, svg, width, height);
+      executeVisualization(d3, svg, width, height, container);
 
     } catch (err: any) {
       console.error("D3 visualization error:", err);

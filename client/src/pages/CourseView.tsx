@@ -133,6 +133,8 @@ export default function CourseView() {
     );
   }
 
+  const isGenerating = (course.curriculum as any)?.generating === true || modules.length === 0;
+
   return (
     <Layout>
       <div className="min-h-screen bg-background">
@@ -176,7 +178,7 @@ export default function CourseView() {
                 <div className="p-4 rounded-2xl bg-card border border-border/50">
                   <div className="flex items-center justify-between mb-4 px-2">
                     <h3 className="font-medium">Modules</h3>
-                    {isStreaming && (
+                    {(isStreaming || isGenerating) && (
                       <span className="flex items-center gap-1.5 text-xs text-accent">
                         <Sparkles className="w-3 h-3 animate-pulse" />
                         Generating...
@@ -184,44 +186,86 @@ export default function CourseView() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    {modules.map((module, idx) => {
-                      const moduleLoading = isModuleLoading(module);
-                      return (
-                        <button
-                          key={module.id}
-                          onClick={() => setSelectedModuleIndex(idx)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
-                            idx === selectedModuleIndex
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          }`}
-                          data-testid={`button-module-${idx}`}
-                        >
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                            idx === selectedModuleIndex
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
-                          }`}>
-                            {moduleLoading ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              idx + 1
-                            )}
+                    {isGenerating && modules.length === 0 ? (
+                      <>
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
+                            <div className="w-6 h-6 rounded-full bg-muted animate-pulse" />
+                            <div className="h-4 bg-muted rounded animate-pulse flex-1" />
                           </div>
-                          <span className="truncate flex-1">{module.title}</span>
-                          {moduleLoading && (
-                            <span className="text-xs text-accent">...</span>
-                          )}
-                        </button>
-                      );
-                    })}
+                        ))}
+                      </>
+                    ) : (
+                      modules.map((module, idx) => {
+                        const moduleLoading = isModuleLoading(module);
+                        return (
+                          <button
+                            key={module.id}
+                            onClick={() => setSelectedModuleIndex(idx)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
+                              idx === selectedModuleIndex
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                            data-testid={`button-module-${idx}`}
+                          >
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                              idx === selectedModuleIndex
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground"
+                            }`}>
+                              {moduleLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                idx + 1
+                              )}
+                            </div>
+                            <span className="truncate flex-1">{module.title}</span>
+                            {moduleLoading && (
+                              <span className="text-xs text-accent">...</span>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
             </aside>
 
             <main className="flex-1 min-w-0">
-              {currentModule ? (
+              {isGenerating && !currentModule ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-8"
+                >
+                  <div className="p-12 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
+                    <div className="relative mb-8">
+                      <div className="absolute inset-0 bg-accent/20 rounded-full blur-2xl animate-pulse" />
+                      <div className="relative p-6 rounded-full bg-accent/10">
+                        <Sparkles className="w-12 h-12 text-accent animate-pulse" />
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-semibold mb-3">Creating your course...</h3>
+                    <p className="text-muted-foreground max-w-lg mb-6">
+                      AI is designing your personalized curriculum with interactive simulations, 
+                      knowledge checks, and curated resources. This usually takes 1-2 minutes.
+                    </p>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                      Generating course outline...
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="h-8 w-64 bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-48 bg-muted/50 rounded animate-pulse" />
+                  </div>
+
+                  <div className="h-80 bg-muted/30 rounded-2xl animate-pulse" />
+                </motion.div>
+              ) : currentModule ? (
                 <motion.div
                   key={currentModule.id}
                   initial={{ opacity: 0, y: 20 }}

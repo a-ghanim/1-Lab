@@ -8,6 +8,18 @@ interface ThreeSimulationProps {
   title?: string;
 }
 
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+  };
+  return text.replace(/&amp;|&lt;|&gt;|&quot;|&#39;|&apos;/g, match => entities[match] || match);
+}
+
 export function ThreeSimulation({ code, title }: ThreeSimulationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +54,7 @@ export function ThreeSimulation({ code, title }: ThreeSimulationProps) {
 
       let animationId: number;
 
+      const decodedCode = decodeHtmlEntities(code);
       const executeSimulation = new Function(
         "THREE",
         "scene",
@@ -50,7 +63,7 @@ export function ThreeSimulation({ code, title }: ThreeSimulationProps) {
         "width",
         "height",
         `
-        ${code}
+        ${decodedCode}
         return { animate: typeof animate === 'function' ? animate : null };
         `
       );

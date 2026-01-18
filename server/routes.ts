@@ -311,7 +311,7 @@ Return ONLY valid JSON, no markdown.`
     }
   });
 
-  // Streaming course generation - creates outline first, then streams modules
+  // Fast course generation - creates course immediately, generates content in background
   app.post("/api/courses/generate-stream", isAuthenticated, async (req: Request, res: Response) => {
     const user = req.user as any;
     const { prompt } = req.body;
@@ -338,10 +338,29 @@ Return ONLY valid JSON, no markdown.`
     }
 
     try {
-      // Step 1: Generate course outline quickly
+      // Step 1: Create course IMMEDIATELY with placeholder data - enables instant navigation
+      sendEvent('progress', { step: 'creating', message: 'Setting up your course...' });
+
+      const course = await storage.createCourse({
+        userId: user.claims.sub,
+        title: prompt.slice(0, 100),
+        description: "Generating course content...",
+        prompt: prompt,
+        curriculum: { generating: true },
+        totalModules: 0,
+        estimatedHours: 0,
+      });
+
+      // Send course created event IMMEDIATELY - frontend navigates to course page
+      sendEvent('course_created', { 
+        course,
+        modules: []
+      });
+
+      // Step 2: Generate course outline in background
       sendEvent('progress', { step: 'outline', message: 'Creating course outline...' });
 
-      const outlineModel = getGeminiModel(false); // Use flash for speed
+      const outlineModel = getGeminiModel(false);
       const outlineResult = await outlineModel.generateContent([
         COURSE_OUTLINE_PROMPT,
         `Create a course outline for: "${prompt}". Return ONLY valid JSON.`
@@ -364,15 +383,19 @@ Return ONLY valid JSON, no markdown.`
         return;
       }
 
-      // Step 2: Create course in database
-      const course = await storage.createCourse({
-        userId: user.claims.sub,
+      // Update course with real title and description
+      await storage.updateCourse(course.id, {
         title: outline.title || prompt,
         description: outline.description || "",
-        prompt: prompt,
         curriculum: outline,
         totalModules: outline.modules?.length || 0,
         estimatedHours: outline.estimatedHours || 0,
+      });
+
+      sendEvent('course_updated', {
+        title: outline.title,
+        description: outline.description,
+        totalModules: outline.modules?.length || 0
       });
 
       // Create placeholder modules in database
@@ -388,19 +411,18 @@ Return ONLY valid JSON, no markdown.`
           estimatedMinutes: 30,
         });
         moduleRecords.push(moduleRecord);
-      }
 
-      // Send course created event - frontend navigates to course page now
-      sendEvent('course_created', { 
-        course, 
-        modules: moduleRecords.map(m => ({ 
-          id: m.id, 
-          title: m.title, 
-          description: m.description, 
-          order: m.order,
-          loading: true 
-        }))
-      });
+        // Send module created event so frontend can show it immediately
+        sendEvent('module_created', {
+          module: {
+            id: moduleRecord.id,
+            title: moduleRecord.title,
+            description: moduleRecord.description,
+            order: moduleRecord.order,
+            loading: true
+          }
+        });
+      }
 
       // Step 3: Generate full content for each module
       const contentModel = getGeminiModel(true); // Use pro for quality
