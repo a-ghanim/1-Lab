@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen, Brain, MessageSquare, Target, Zap, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NoiseOverlay } from "@/components/NoiseOverlay";
+import { BentoCard } from "@/components/BentoCard";
 
 export default function Landing() {
   const handleLogin = () => {
@@ -8,8 +10,10 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden dot-grid">
-      <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-6 border-b border-border bg-background">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden">
+      <NoiseOverlay opacity={0.04} />
+      
+      <header className="relative z-10 flex items-center justify-between px-6 md:px-12 lg:px-20 py-6 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 bg-foreground" />
           <span className="font-medium">One Breath Lab</span>
@@ -27,11 +31,11 @@ export default function Landing() {
 
       <main className="relative z-10 px-6 md:px-12 lg:px-20">
         <div className="max-w-6xl mx-auto">
-          <div className="pt-24 md:pt-36 lg:pt-44 pb-20 md:pb-32">
+          <div className="pt-24 md:pt-36 lg:pt-44 pb-20 md:pb-28">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.5 }}
               className="max-w-2xl"
             >
               <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-medium leading-[1.1] tracking-tight mb-8">
@@ -40,96 +44,130 @@ export default function Landing() {
               </h1>
 
               <p className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed">
-                Not another chat-with-PDF tool. This is a lab for building real understanding—where your sources become structured knowledge, and AI helps you think, not just search.
+                Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  onClick={handleLogin}
-                  className="btn-primary h-11 px-6 text-base"
-                  data-testid="button-get-started"
-                >
-                  Start learning
-                  <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
-                </Button>
-              </div>
+              <Button 
+                onClick={handleLogin}
+                className="btn-primary h-12 px-8 text-base"
+                data-testid="button-get-started"
+              >
+                Start learning
+                <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
+              </Button>
             </motion.div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="pb-24 md:pb-32"
-          >
-            <div className="grid md:grid-cols-2 gap-px bg-border border border-border">
-              <div className="bg-card p-8 md:p-10">
-                <div className="text-xs text-muted-foreground uppercase tracking-wider mb-6">The problem</div>
-                <p className="text-lg leading-relaxed">
-                  You bookmark articles. Download papers. Take notes you never revisit. Information piles up, but understanding doesn't.
-                </p>
-              </div>
-              <div className="bg-card p-8 md:p-10">
-                <div className="text-xs text-muted-foreground uppercase tracking-wider mb-6">The shift</div>
-                <p className="text-lg leading-relaxed">
-                  What if every source you added became part of a living curriculum? What if AI didn't just answer questions—but helped you build mental models?
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-            className="pb-24 md:pb-32"
-          >
-            <div className="max-w-3xl">
-              <h2 className="text-2xl md:text-3xl font-medium mb-12">
-                How it works
-              </h2>
-              
-              <div className="space-y-12">
-                {[
-                  {
-                    title: "Collect sources around a topic",
-                    description: "Papers, articles, videos, notes—anything you're learning from. They become your personal knowledge base, not just files in a folder."
-                  },
-                  {
-                    title: "AI generates a learning path",
-                    description: "Based on what you're trying to understand, we create structured modules with concepts that build on each other. Not random Q&A—a curriculum."
-                  },
-                  {
-                    title: "Ask questions, get cited answers",
-                    description: "Every response points back to your sources. You're not trusting a black box—you're having a conversation grounded in material you chose."
-                  },
-                  {
-                    title: "Track what you actually know",
-                    description: "Quizzes, progress tracking, daily streaks. Spaced repetition that moves understanding from short-term memory into lasting knowledge."
-                  }
-                ].map((step, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.3, delay: idx * 0.1 }}
-                    className="flex gap-6"
-                  >
-                    <div className="text-sm text-muted-foreground w-8 shrink-0 pt-1">
-                      {String(idx + 1).padStart(2, '0')}
+          {/* Bento Grid */}
+          <div className="pb-24 md:pb-32">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Large feature card */}
+              <BentoCard 
+                variant="dark" 
+                size="lg" 
+                className="md:col-span-2 lg:col-span-2"
+                delay={0}
+              >
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 bg-foreground/5 dark:bg-white/5">
+                      <Layers className="w-5 h-5" strokeWidth={1.5} />
                     </div>
-                    <div>
-                      <h3 className="font-medium mb-2">{step.title}</h3>
-                      <p className="text-muted-foreground leading-relaxed">{step.description}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">Core concept</span>
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-medium mb-4">
+                    Sources become curriculum
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-lg">
+                    Every paper, article, and note you add becomes part of a living knowledge base. AI doesn't just search—it structures your understanding into modules that build on each other.
+                  </p>
+                </div>
+              </BentoCard>
 
+              {/* Tall card */}
+              <BentoCard 
+                variant="accent" 
+                size="md"
+                className="lg:row-span-2"
+                delay={0.1}
+              >
+                <div className="h-full flex flex-col">
+                  <div className="p-2.5 bg-primary/5 w-fit mb-6">
+                    <Brain className="w-5 h-5 text-primary" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-xl font-medium mb-3">Mental models, not answers</h3>
+                  <p className="text-muted-foreground leading-relaxed flex-1">
+                    Chat interfaces give you responses. We help you build frameworks for thinking. Every concept connects to what you already know.
+                  </p>
+                  <div className="mt-6 pt-6 border-t border-primary/10">
+                    <div className="text-4xl font-medium mb-1">4x</div>
+                    <div className="text-sm text-muted-foreground">better retention vs passive reading</div>
+                  </div>
+                </div>
+              </BentoCard>
+
+              {/* Medium cards */}
+              <BentoCard variant="subtle" size="md" delay={0.15}>
+                <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
+                  <BookOpen className="w-5 h-5" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Collect sources</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Papers, articles, videos, notes—anything you're learning from. Build your personal research library.
+                </p>
+              </BentoCard>
+
+              <BentoCard variant="default" size="md" delay={0.2}>
+                <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
+                  <MessageSquare className="w-5 h-5" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Cited conversations</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Every AI response points back to your sources. You're not trusting a black box.
+                </p>
+              </BentoCard>
+
+              {/* Bottom row */}
+              <BentoCard variant="default" size="md" delay={0.25}>
+                <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
+                  <Target className="w-5 h-5" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Progress tracking</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Quizzes test understanding. Streaks build habits. Watch your knowledge compound.
+                </p>
+              </BentoCard>
+
+              <BentoCard 
+                variant="dark" 
+                size="md"
+                className="md:col-span-2"
+                delay={0.3}
+              >
+                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                  <div className="flex-1">
+                    <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
+                      <Zap className="w-5 h-5" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">AI-generated courses</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Enter any topic. Get a structured curriculum with modules, key concepts, examples, and knowledge checks—in seconds.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex -space-x-2">
+                      {[1,2,3].map((i) => (
+                        <div key={i} className="w-8 h-8 rounded-full bg-muted border-2 border-background" />
+                      ))}
+                    </div>
+                    <span>2,400+ courses created</span>
+                  </div>
+                </div>
+              </BentoCard>
+            </div>
+          </div>
+
+          {/* CTA Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -142,7 +180,7 @@ export default function Landing() {
                 For the deeply curious
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                Students tired of passive reading. Researchers drowning in papers. Autodidacts who want structure without hand-holding. Anyone who believes understanding beats skimming.
+                Students tired of passive reading. Researchers drowning in papers. Autodidacts who want structure without hand-holding.
               </p>
               <Button 
                 onClick={handleLogin}
@@ -157,7 +195,7 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-border py-6 bg-background">
+      <footer className="relative z-10 border-t border-border py-6 bg-background/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 text-xs text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} One Breath Lab</p>
         </div>
