@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -6,6 +6,14 @@ import { Layout } from "@/components/Layout";
 import { FocusTimer } from "@/components/FocusTimer";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -34,10 +42,14 @@ import {
   Archive,
   Trash2,
   ArchiveRestore,
+  Search,
 } from "lucide-react";
 import { GenerateButton } from "@/components/GenerateButton";
 import { FluidBackground } from "@/components/FluidBackground";
 import type { Course } from "@shared/schema";
+
+type StatusFilter = "all" | "active" | "archived";
+type SortOption = "recent" | "oldest" | "alphabetical";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -48,18 +60,50 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState("");
   const [showGenerator, setShowGenerator] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortOption, setSortOption] = useState<SortOption>("recent");
 
-  const { data: courses = [], isLoading: coursesLoading } = useQuery<Course[]>({
-    queryKey: ["/api/courses", showArchived],
+  const { data: allCourses = [], isLoading: coursesLoading } = useQuery<Course[]>({
+    queryKey: ["/api/courses", true],
     queryFn: async () => {
-      const url = showArchived ? "/api/courses?includeArchived=true" : "/api/courses";
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch("/api/courses?includeArchived=true", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch courses");
       return res.json();
     },
   });
+
+  const filteredCourses = useMemo(() => {
+    let result = [...allCourses];
+
+    if (statusFilter === "active") {
+      result = result.filter((c) => !c.archived);
+    } else if (statusFilter === "archived") {
+      result = result.filter((c) => c.archived);
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.title.toLowerCase().includes(query) ||
+          (c.description && c.description.toLowerCase().includes(query))
+      );
+    }
+
+    result.sort((a, b) => {
+      if (sortOption === "alphabetical") {
+        return a.title.localeCompare(b.title);
+      } else if (sortOption === "oldest") {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      } else {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+    });
+
+    return result;
+  }, [allCourses, statusFilter, searchQuery, sortOption]);
 
   const deleteCourse = useMutation({
     mutationFn: async (courseId: string) => {
@@ -203,7 +247,7 @@ export default function Dashboard() {
                   {user?.firstName || "Learner"}
                 </h1>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{courses.length} courses</span>
+                  <span>{allCourses.length} courses</span>
                   <span>{stats?.modulesCompleted || 0} modules</span>
                   {(streak?.currentStreak || 0) > 0 && (
                     <span>{streak?.currentStreak} day streak</span>
@@ -286,7 +330,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-center h-48">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : courses.length === 0 ? (
+              ) : allCourses.length === 0 ? (
                 <div 
                   className="flex flex-col items-center justify-center h-64 border border-dashed border-border cursor-pointer hover:border-foreground/20 transition-colors"
                   onClick={() => setShowGenerator(true)}
@@ -299,18 +343,52 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-end">
-                    <button
-                      onClick={() => setShowArchived(!showArchived)}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-                      data-testid="button-toggle-archived"
-                    >
-                      <Archive className="w-3 h-3" />
-                      {showArchived ? "Hide archived" : "Show archived"}
-                    </button>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 h-9 bg-background border-border"
+                        data-testid="input-search-courses"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                        <SelectTrigger className="w-[130px] h-9 bg-background border-border" data-testid="select-status-filter">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all" data-testid="option-status-all">All courses</SelectItem>
+                          <SelectItem value="active" data-testid="option-status-active">Active only</SelectItem>
+                          <SelectItem value="archived" data-testid="option-status-archived">Archived only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+                        <SelectTrigger className="w-[140px] h-9 bg-background border-border" data-testid="select-sort-option">
+                          <SelectValue placeholder="Sort by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="recent" data-testid="option-sort-recent">Most Recent</SelectItem>
+                          <SelectItem value="oldest" data-testid="option-sort-oldest">Oldest</SelectItem>
+                          <SelectItem value="alphabetical" data-testid="option-sort-alphabetical">Alphabetical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+                  {filteredCourses.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-48 text-center">
+                      <Search className="w-6 h-6 text-muted-foreground mb-3" strokeWidth={1.5} />
+                      <p className="text-muted-foreground mb-1">No courses found</p>
+                      <p className="text-sm text-muted-foreground">
+                        Try adjusting your search or filters
+                      </p>
+                    </div>
+                  ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {courses.map((course, idx) => (
+                  {filteredCourses.map((course, idx) => (
                     <motion.div
                       key={course.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -404,6 +482,7 @@ export default function Dashboard() {
                     </motion.div>
                   ))}
                   </div>
+                  )}
                 </div>
               )}
             </div>
