@@ -31,7 +31,7 @@ Output Format: Valid JSON only, no markdown code blocks.
       "content": { "overview": "Module overview text" },
       "simulationCode": "// p5.js instance mode code for interactive visualization (use 'p' as instance)",
       "quizzes": [
-        { "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why A is correct" }
+        { "question": "...", "options": ["Option A text", "Option B text", "Option C text", "Option D text"], "correctAnswer": "Option A text (MUST be the EXACT full text of correct option, NOT a letter)", "explanation": "Why this answer is correct" }
       ],
       "resources": [
         { "type": "article|paper|video|book", "title": "Resource title", "author": "Author name", "url": "URL if available", "summary": "Brief summary" }
@@ -81,7 +81,7 @@ Output Format: Valid JSON only, no markdown code blocks.
   "simulationType": "matter|three|d3|p5",
   "simulationCode": "// Code for the chosen library",
   "quizzes": [
-    { "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why A is correct" }
+    { "question": "...", "options": ["Option A text", "Option B text", "Option C text", "Option D text"], "correctAnswer": "Option A text (MUST be EXACT full text of correct option, NOT a letter)", "explanation": "Why this answer is correct" }
   ],
   "resources": [
     { "type": "article|paper|video|book", "title": "Resource title", "author": "Author name", "url": "URL", "summary": "Brief summary" }

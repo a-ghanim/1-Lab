@@ -309,6 +309,11 @@ export default function CourseView() {
                       <div className="space-y-4">
                         {quizzes.map((quiz, idx) => {
                           const options = (quiz.options as string[]) || [];
+                          // Handle correctAnswer being either a letter (A/B/C/D) or full text
+                          const letterIndex = ['A', 'B', 'C', 'D'];
+                          const correctAnswerText = letterIndex.includes(quiz.correctAnswer)
+                            ? options[letterIndex.indexOf(quiz.correctAnswer)]
+                            : quiz.correctAnswer;
                           return (
                             <div
                               key={quiz.id}
@@ -319,7 +324,7 @@ export default function CourseView() {
                                 {options.map((opt: string) => {
                                   const isSelected = selectedAnswers[idx] === opt;
                                   const showResult = showFeedback[idx];
-                                  const isCorrect = opt === quiz.correctAnswer;
+                                  const isCorrect = opt === correctAnswerText;
 
                                   return (
                                     <button
