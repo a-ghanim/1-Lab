@@ -177,10 +177,54 @@ export async function registerRoutes(
   app.get("/api/courses", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as any;
-      const courses = await storage.getCoursesByUser(user.claims.sub);
+      const includeArchived = req.query.includeArchived === 'true';
+      const courses = await storage.getCoursesByUser(user.claims.sub, includeArchived);
       res.json(courses);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch courses" });
+    }
+  });
+
+  app.delete("/api/courses/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const course = await storage.getCourse(req.params.id as string);
+      
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      if (course.userId !== user.claims.sub) {
+        return res.status(403).json({ error: "Not authorized to delete this course" });
+      }
+      
+      await storage.deleteCourse(req.params.id as string);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete course error:", error);
+      res.status(500).json({ error: "Failed to delete course" });
+    }
+  });
+
+  app.post("/api/courses/:id/archive", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { archived } = req.body;
+      const course = await storage.getCourse(req.params.id as string);
+      
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      if (course.userId !== user.claims.sub) {
+        return res.status(403).json({ error: "Not authorized to archive this course" });
+      }
+      
+      const updatedCourse = await storage.archiveCourse(req.params.id as string, archived ?? true);
+      res.json(updatedCourse);
+    } catch (error) {
+      console.error("Archive course error:", error);
+      res.status(500).json({ error: "Failed to archive course" });
     }
   });
 

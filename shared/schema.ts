@@ -34,6 +34,7 @@ export const courses = pgTable("courses", {
   coverImage: text("cover_image"),
   totalModules: integer("total_modules").default(0),
   estimatedHours: integer("estimated_hours").default(0),
+  archived: boolean("archived").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

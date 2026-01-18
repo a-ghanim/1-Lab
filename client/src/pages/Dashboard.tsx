@@ -1,18 +1,39 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { FocusTimer } from "@/components/FocusTimer";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   BookOpen,
   ArrowRight,
   Loader2,
   Plus,
-  X
+  X,
+  MoreVertical,
+  Archive,
+  Trash2,
+  ArchiveRestore,
 } from "lucide-react";
 import { GenerateButton } from "@/components/GenerateButton";
 import { FluidBackground } from "@/components/FluidBackground";
@@ -27,13 +48,56 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState("");
   const [showGenerator, setShowGenerator] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
   const { data: courses = [], isLoading: coursesLoading } = useQuery<Course[]>({
-    queryKey: ["/api/courses"],
+    queryKey: ["/api/courses", showArchived],
     queryFn: async () => {
-      const res = await fetch("/api/courses", { credentials: "include" });
+      const url = showArchived ? "/api/courses?includeArchived=true" : "/api/courses";
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch courses");
       return res.json();
+    },
+  });
+
+  const deleteCourse = useMutation({
+    mutationFn: async (courseId: string) => {
+      const res = await fetch(`/api/courses/${courseId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete course");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({ description: "Course deleted successfully" });
+      setCourseToDelete(null);
+    },
+    onError: () => {
+      toast({ description: "Failed to delete course", variant: "destructive" });
+    },
+  });
+
+  const archiveCourse = useMutation({
+    mutationFn: async ({ courseId, archived }: { courseId: string; archived: boolean }) => {
+      const res = await fetch(`/api/courses/${courseId}/archive`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ archived }),
+      });
+      if (!res.ok) throw new Error("Failed to archive course");
+      return res.json();
+    },
+    onSuccess: (_, { archived }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      toast({ description: archived ? "Course archived" : "Course restored" });
+    },
+    onError: () => {
+      toast({ description: "Failed to archive course", variant: "destructive" });
     },
   });
 
@@ -234,7 +298,18 @@ export default function Dashboard() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-end">
+                    <button
+                      onClick={() => setShowArchived(!showArchived)}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                      data-testid="button-toggle-archived"
+                    >
+                      <Archive className="w-3 h-3" />
+                      {showArchived ? "Hide archived" : "Show archived"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {courses.map((course, idx) => (
                     <motion.div
                       key={course.id}
@@ -242,7 +317,7 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                      className="group cursor-pointer"
+                      className={`group cursor-pointer ${course.archived ? "opacity-60" : ""}`}
                       onClick={() => navigate(`/courses/${course.id}`)}
                       data-testid={`card-course-${course.id}`}
                     >
@@ -255,18 +330,65 @@ export default function Dashboard() {
                         
                         <div className="relative z-10">
                           <div className="flex items-start justify-between mb-3">
-                            <motion.div
-                              whileHover={{ rotate: 5 }}
-                              transition={{ type: "spring", stiffness: 400 }}
-                            >
-                              <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                            </motion.div>
-                            <motion.div
-                              initial={{ x: -5, opacity: 0 }}
-                              whileHover={{ x: 0, opacity: 1 }}
-                            >
-                              <ArrowRight className="w-4 h-4 text-foreground" />
-                            </motion.div>
+                            <div className="flex items-center gap-2">
+                              <motion.div
+                                whileHover={{ rotate: 5 }}
+                                transition={{ type: "spring", stiffness: 400 }}
+                              >
+                                <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                              </motion.div>
+                              {course.archived && (
+                                <span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5">
+                                  Archived
+                                </span>
+                              )}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 -m-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                data-testid={`button-course-menu-${course.id}`}
+                              >
+                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                {course.archived ? (
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      archiveCourse.mutate({ courseId: course.id, archived: false });
+                                    }}
+                                    data-testid={`button-restore-${course.id}`}
+                                  >
+                                    <ArchiveRestore className="w-4 h-4 mr-2" />
+                                    Restore
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      archiveCourse.mutate({ courseId: course.id, archived: true });
+                                    }}
+                                    data-testid={`button-archive-${course.id}`}
+                                  >
+                                    <Archive className="w-4 h-4 mr-2" />
+                                    Archive
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCourseToDelete(course);
+                                  }}
+                                  className="text-destructive focus:text-destructive"
+                                  data-testid={`button-delete-${course.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
 
                           <h3 className="font-medium mb-1.5 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">{course.title}</h3>
@@ -281,6 +403,7 @@ export default function Dashboard() {
                       </div>
                     </motion.div>
                   ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -288,6 +411,31 @@ export default function Dashboard() {
         </div>
       </div>
       <FocusTimer />
+      
+      <AlertDialog open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{courseToDelete?.title}" and all its modules, quizzes, and progress. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => courseToDelete && deleteCourse.mutate(courseToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {deleteCourse.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

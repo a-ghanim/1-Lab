@@ -46,9 +46,11 @@ export interface IStorage {
   
   // Courses
   getCourse(id: string): Promise<Course | undefined>;
-  getCoursesByUser(userId: string): Promise<Course[]>;
+  getCoursesByUser(userId: string, includeArchived?: boolean): Promise<Course[]>;
   createCourse(course: InsertCourse): Promise<Course>;
   updateCourse(id: string, data: Partial<InsertCourse>): Promise<Course>;
+  deleteCourse(id: string): Promise<void>;
+  archiveCourse(id: string, archived: boolean): Promise<Course>;
   
   // Modules
   getModule(id: string): Promise<Module | undefined>;
@@ -130,8 +132,13 @@ export class DatabaseStorage implements IStorage {
     return course;
   }
 
-  async getCoursesByUser(userId: string): Promise<Course[]> {
-    return db.select().from(courses).where(eq(courses.userId, userId)).orderBy(desc(courses.createdAt));
+  async getCoursesByUser(userId: string, includeArchived: boolean = false): Promise<Course[]> {
+    if (includeArchived) {
+      return db.select().from(courses).where(eq(courses.userId, userId)).orderBy(desc(courses.createdAt));
+    }
+    return db.select().from(courses).where(
+      and(eq(courses.userId, userId), eq(courses.archived, false))
+    ).orderBy(desc(courses.createdAt));
   }
 
   async createCourse(course: InsertCourse): Promise<Course> {
@@ -143,6 +150,33 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db
       .update(courses)
       .set({ ...data, updatedAt: new Date() })
+      .where(eq(courses.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteCourse(id: string): Promise<void> {
+    // Delete related data first (cascading delete)
+    const moduleIds = await db.select({ id: modules.id }).from(modules).where(eq(modules.courseId, id));
+    const moduleIdList = moduleIds.map(m => m.id);
+    
+    if (moduleIdList.length > 0) {
+      await db.delete(quizzes).where(inArray(quizzes.moduleId, moduleIdList));
+      await db.delete(resources).where(inArray(resources.moduleId, moduleIdList));
+    }
+    await db.delete(resources).where(eq(resources.courseId, id));
+    await db.delete(modules).where(eq(modules.courseId, id));
+    await db.delete(progress).where(eq(progress.courseId, id));
+    await db.delete(studySessions).where(eq(studySessions.courseId, id));
+    await db.delete(sources).where(eq(sources.notebookId, id));
+    await db.delete(chatMessages).where(eq(chatMessages.notebookId, id));
+    await db.delete(courses).where(eq(courses.id, id));
+  }
+
+  async archiveCourse(id: string, archived: boolean): Promise<Course> {
+    const [result] = await db
+      .update(courses)
+      .set({ archived, updatedAt: new Date() })
       .where(eq(courses.id, id))
       .returning();
     return result;
