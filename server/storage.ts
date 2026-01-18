@@ -8,6 +8,7 @@ import {
   resources, 
   uploads, 
   streaks,
+  studySessions,
   type User,
   type LearnerProfile,
   type InsertLearnerProfile,
@@ -23,9 +24,11 @@ import {
   type InsertResource,
   type Upload,
   type InsertUpload,
+  type StudySession,
+  type InsertStudySession,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sum, count, sql, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (handled by auth module)
@@ -68,6 +71,14 @@ export interface IStorage {
   // Streaks
   getStreak(userId: string): Promise<{ currentStreak: number; longestStreak: number } | undefined>;
   updateStreak(userId: string): Promise<void>;
+  
+  // User stats
+  getUserStats(userId: string): Promise<{ modulesCompleted: number; hoursLearned: number }>;
+  
+  // Study sessions
+  createStudySession(session: InsertStudySession): Promise<StudySession>;
+  endStudySession(sessionId: string, durationMinutes: number): Promise<StudySession>;
+  getActiveStudySession(userId: string): Promise<StudySession | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -146,15 +157,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProgress(data: InsertProgress): Promise<Progress> {
-    const [result] = await db
-      .insert(progress)
-      .values(data)
-      .onConflictDoUpdate({
-        target: [progress.userId, progress.courseId, progress.moduleId],
-        set: { ...data, lastAccessedAt: new Date() },
-      })
-      .returning();
-    return result;
+    const existing = data.moduleId 
+      ? await db.select().from(progress).where(
+          and(
+            eq(progress.userId, data.userId),
+            eq(progress.courseId, data.courseId),
+            eq(progress.moduleId, data.moduleId)
+          )
+        )
+      : await db.select().from(progress).where(
+          and(
+            eq(progress.userId, data.userId),
+            eq(progress.courseId, data.courseId),
+            sql`${progress.moduleId} IS NULL`
+          )
+        );
+    
+    if (existing.length > 0) {
+      const [result] = await db
+        .update(progress)
+        .set({ 
+          ...data, 
+          lastAccessedAt: new Date(),
+          timeSpent: (existing[0].timeSpent || 0) + (data.timeSpent || 0)
+        })
+        .where(eq(progress.id, existing[0].id))
+        .returning();
+      return result;
+    } else {
+      const [result] = await db
+        .insert(progress)
+        .values({ ...data, lastAccessedAt: new Date() })
+        .returning();
+      return result;
+    }
   }
 
   async getQuizzesByModule(moduleId: string): Promise<Quiz[]> {
@@ -243,6 +279,53 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(streaks.userId, userId));
+  }
+
+  async getUserStats(userId: string): Promise<{ modulesCompleted: number; hoursLearned: number }> {
+    const [completedResult] = await db
+      .select({ count: count() })
+      .from(progress)
+      .where(and(eq(progress.userId, userId), eq(progress.completed, true)));
+    
+    const [hoursResult] = await db
+      .select({ total: sum(studySessions.durationMinutes) })
+      .from(studySessions)
+      .where(eq(studySessions.userId, userId));
+    
+    return {
+      modulesCompleted: completedResult?.count || 0,
+      hoursLearned: Math.round((Number(hoursResult?.total) || 0) / 60 * 10) / 10,
+    };
+  }
+
+  async createStudySession(session: InsertStudySession): Promise<StudySession> {
+    const [result] = await db.insert(studySessions).values(session).returning();
+    return result;
+  }
+
+  async endStudySession(sessionId: string, durationMinutes: number): Promise<StudySession> {
+    const [result] = await db
+      .update(studySessions)
+      .set({ 
+        endedAt: new Date(), 
+        durationMinutes 
+      })
+      .where(eq(studySessions.id, sessionId))
+      .returning();
+    return result;
+  }
+
+  async getActiveStudySession(userId: string): Promise<StudySession | undefined> {
+    const [session] = await db
+      .select()
+      .from(studySessions)
+      .where(and(
+        eq(studySessions.userId, userId),
+        sql`${studySessions.endedAt} IS NULL`
+      ))
+      .orderBy(desc(studySessions.startedAt))
+      .limit(1);
+    return session;
   }
 }
 

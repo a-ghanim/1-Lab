@@ -637,6 +637,114 @@ Return ONLY valid JSON.`
     }
   });
 
+  // User stats endpoint
+  app.get("/api/stats", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const stats = await storage.getUserStats(user.claims.sub);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  // Progress endpoints
+  app.post("/api/progress/update", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { courseId, moduleId, completed, score, timeSpent } = req.body;
+      
+      const progress = await storage.updateProgress({
+        userId: user.claims.sub,
+        courseId,
+        moduleId,
+        completed,
+        score,
+        timeSpent,
+      });
+      
+      if (completed) {
+        await storage.updateStreak(user.claims.sub);
+      }
+      
+      res.json(progress);
+    } catch (error) {
+      console.error('Progress update error:', error);
+      res.status(500).json({ error: "Failed to update progress" });
+    }
+  });
+
+  app.get("/api/progress/:courseId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const progress = await storage.getProgress(user.claims.sub, req.params.courseId);
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch progress" });
+    }
+  });
+
+  // Study session endpoints (focus timer)
+  app.post("/api/study-session/start", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { courseId, moduleId, focusMode } = req.body;
+      
+      const existing = await storage.getActiveStudySession(user.claims.sub);
+      if (existing) {
+        const elapsed = Math.round((Date.now() - new Date(existing.startedAt!).getTime()) / 60000);
+        await storage.endStudySession(existing.id, elapsed);
+      }
+      
+      const session = await storage.createStudySession({
+        userId: user.claims.sub,
+        courseId,
+        moduleId,
+        focusMode: focusMode || false,
+      });
+      
+      await storage.updateStreak(user.claims.sub);
+      
+      res.json(session);
+    } catch (error) {
+      console.error('Start session error:', error);
+      res.status(500).json({ error: "Failed to start study session" });
+    }
+  });
+
+  app.post("/api/study-session/end", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { sessionId, durationMinutes } = req.body;
+      
+      if (sessionId) {
+        const session = await storage.endStudySession(sessionId, durationMinutes || 0);
+        res.json(session);
+      } else {
+        const active = await storage.getActiveStudySession(user.claims.sub);
+        if (active) {
+          const elapsed = durationMinutes || Math.round((Date.now() - new Date(active.startedAt!).getTime()) / 60000);
+          const session = await storage.endStudySession(active.id, elapsed);
+          res.json(session);
+        } else {
+          res.json({ message: "No active session" });
+        }
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to end study session" });
+    }
+  });
+
+  app.get("/api/study-session/active", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const session = await storage.getActiveStudySession(user.claims.sub);
+      res.json(session || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch active session" });
+    }
+  });
+
   // Original simulation endpoints
   app.post("/api/generate-stream", async (req, res) => {
     const { concept } = req.body;

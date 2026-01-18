@@ -67,6 +67,19 @@ export const progress = pgTable("progress", {
   index("progress_user_course_idx").on(table.userId, table.courseId),
 ]);
 
+// Study sessions for focus timer
+export const studySessions = pgTable("study_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  courseId: varchar("course_id").references(() => courses.id),
+  moduleId: varchar("module_id").references(() => modules.id),
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+  durationMinutes: integer("duration_minutes").default(0),
+  focusMode: boolean("focus_mode").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Quiz questions
 export const quizzes = pgTable("quizzes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -160,6 +173,7 @@ export const insertProgressSchema = createInsertSchema(progress).omit({ id: true
 export const insertQuizSchema = createInsertSchema(quizzes).omit({ id: true, createdAt: true });
 export const insertResourceSchema = createInsertSchema(resources).omit({ id: true, createdAt: true });
 export const insertUploadSchema = createInsertSchema(uploads).omit({ id: true, createdAt: true });
+export const insertStudySessionSchema = createInsertSchema(studySessions).omit({ id: true, createdAt: true });
 
 // Types
 export type LearnerProfile = typeof learnerProfiles.$inferSelect;
@@ -176,3 +190,5 @@ export type Resource = typeof resources.$inferSelect;
 export type InsertResource = z.infer<typeof insertResourceSchema>;
 export type Upload = typeof uploads.$inferSelect;
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
+export type StudySession = typeof studySessions.$inferSelect;
+export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
