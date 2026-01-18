@@ -88,15 +88,15 @@ export default function Landing() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Large feature card */}
               <BentoCard 
-                variant="dark" 
+                variant="lemon" 
                 size="lg" 
                 className="md:col-span-2 lg:col-span-2"
                 delay={0}
               >
                 <div className="flex flex-col h-full">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 bg-foreground/5 dark:bg-white/5">
-                      <Layers className="w-5 h-5" strokeWidth={1.5} />
+                    <div className="p-2.5 bg-yellow-500/10">
+                      <Layers className="w-5 h-5 text-yellow-600 dark:text-yellow-400" strokeWidth={1.5} />
                     </div>
                     <span className="text-xs uppercase tracking-wider text-muted-foreground">Core concept</span>
                   </div>
@@ -111,20 +111,20 @@ export default function Landing() {
 
               {/* Tall card */}
               <BentoCard 
-                variant="accent" 
+                variant="rose" 
                 size="md"
                 className="lg:row-span-2"
                 delay={0.1}
               >
                 <div className="h-full flex flex-col">
-                  <div className="p-2.5 bg-primary/5 w-fit mb-6">
-                    <Brain className="w-5 h-5 text-primary" strokeWidth={1.5} />
+                  <div className="p-2.5 bg-rose-500/10 w-fit mb-6">
+                    <Brain className="w-5 h-5 text-rose-600 dark:text-rose-400" strokeWidth={1.5} />
                   </div>
                   <h3 className="text-xl font-medium mb-3">Mental models, not answers</h3>
                   <p className="text-muted-foreground leading-relaxed flex-1">
                     Chat interfaces give you responses. We help you build frameworks for thinking. Every concept connects to what you already know.
                   </p>
-                  <div className="mt-6 pt-6 border-t border-primary/10">
+                  <div className="mt-6 pt-6 border-t border-rose-200/40 dark:border-rose-400/20">
                     <div className="text-4xl font-medium mb-1">4x</div>
                     <div className="text-sm text-muted-foreground">better retention vs passive reading</div>
                   </div>
@@ -132,9 +132,9 @@ export default function Landing() {
               </BentoCard>
 
               {/* Medium cards */}
-              <BentoCard variant="subtle" size="md" delay={0.15}>
-                <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
-                  <BookOpen className="w-5 h-5" strokeWidth={1.5} />
+              <BentoCard variant="sky" size="md" delay={0.15}>
+                <div className="p-2.5 bg-sky-500/10 w-fit mb-5">
+                  <BookOpen className="w-5 h-5 text-sky-600 dark:text-sky-400" strokeWidth={1.5} />
                 </div>
                 <h3 className="text-lg font-medium mb-2">Collect sources</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -142,9 +142,9 @@ export default function Landing() {
                 </p>
               </BentoCard>
 
-              <BentoCard variant="default" size="md" delay={0.2}>
-                <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
-                  <MessageSquare className="w-5 h-5" strokeWidth={1.5} />
+              <BentoCard variant="mint" size="md" delay={0.2}>
+                <div className="p-2.5 bg-emerald-500/10 w-fit mb-5">
+                  <MessageSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
                 </div>
                 <h3 className="text-lg font-medium mb-2">Cited conversations</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -153,9 +153,9 @@ export default function Landing() {
               </BentoCard>
 
               {/* Bottom row */}
-              <BentoCard variant="default" size="md" delay={0.25}>
-                <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
-                  <Target className="w-5 h-5" strokeWidth={1.5} />
+              <BentoCard variant="peach" size="md" delay={0.25}>
+                <div className="p-2.5 bg-orange-500/10 w-fit mb-5">
+                  <Target className="w-5 h-5 text-orange-600 dark:text-orange-400" strokeWidth={1.5} />
                 </div>
                 <h3 className="text-lg font-medium mb-2">Progress tracking</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -164,15 +164,15 @@ export default function Landing() {
               </BentoCard>
 
               <BentoCard 
-                variant="dark" 
+                variant="lavender" 
                 size="md"
                 className="md:col-span-2"
                 delay={0.3}
               >
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                   <div className="flex-1">
-                    <div className="p-2.5 bg-foreground/5 dark:bg-white/5 w-fit mb-5">
-                      <Zap className="w-5 h-5" strokeWidth={1.5} />
+                    <div className="p-2.5 bg-violet-500/10 w-fit mb-5">
+                      <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
                     </div>
                     <h3 className="text-lg font-medium mb-2">AI-generated courses</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
