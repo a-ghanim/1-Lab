@@ -7,6 +7,7 @@ import { FocusTimer } from "@/components/FocusTimer";
 import { NotebookChat } from "@/components/NotebookChat";
 import { SourcesPanel } from "@/components/SourcesPanel";
 import { GeneratingLoader } from "@/components/GeneratingLoader";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -16,131 +17,13 @@ import {
   CheckCircle,
   Clock,
   Loader2,
-  Zap,
   Check,
   X,
-  FileText,
   Sparkles,
-  Lightbulb,
-  GraduationCap,
-  Target,
-  BookMarked,
   ExternalLink,
   MessageSquare,
-  PanelRightOpen,
-  PanelRightClose,
-  ChevronDown,
-  Volume2,
-  VolumeX
 } from "lucide-react";
 import type { Course, Module, Quiz, Resource, Progress as ProgressType } from "@shared/schema";
-
-function ContentCard({ 
-  title, 
-  icon: Icon, 
-  children, 
-  className = "",
-  accentColor = "primary",
-  defaultOpen = true,
-  textContent
-}: { 
-  title: string; 
-  icon: React.ElementType; 
-  children: React.ReactNode;
-  className?: string;
-  accentColor?: "primary" | "accent" | "green" | "blue" | "purple";
-  defaultOpen?: boolean;
-  textContent?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  const colorClasses = {
-    primary: "text-primary bg-primary/10",
-    accent: "text-accent bg-accent/10",
-    green: "text-green-400 bg-green-400/10",
-    blue: "text-blue-400 bg-blue-400/10",
-    purple: "text-purple-400 bg-purple-400/10"
-  };
-
-  const handleSpeak = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!textContent) return;
-    
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(textContent);
-    utterance.rate = 0.95;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
-    setIsSpeaking(true);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl bg-card border border-border/50 overflow-hidden ${className}`}
-    >
-      <div className="flex items-center p-6 hover:bg-muted/30 transition-colors">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 flex-1 text-left"
-          data-testid={`button-toggle-${title.toLowerCase().replace(/\s/g, '-')}`}
-        >
-          <div className={`p-2 rounded-lg ${colorClasses[accentColor]}`}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <h3 className="text-lg font-semibold flex-1">{title}</h3>
-        </button>
-        {textContent && (
-          <button
-            onClick={handleSpeak}
-            className={`p-2 rounded-lg transition-colors mr-2 ${isSpeaking ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}`}
-            data-testid={`button-speak-${title.toLowerCase().replace(/\s/g, '-')}`}
-          >
-            {isSpeaking ? (
-              <VolumeX className="w-4 h-4" strokeWidth={1.5} />
-            ) : (
-              <Volume2 className="w-4 h-4" strokeWidth={1.5} />
-            )}
-          </button>
-        )}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-1"
-          data-testid={`button-chevron-${title.toLowerCase().replace(/\s/g, '-')}`}
-        >
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChevronDown className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
-          </motion.div>
-        </button>
-      </div>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="px-6 pb-6">
-              {children}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
 
 export default function CourseView() {
   const [, params] = useRoute("/courses/:id");
@@ -174,7 +57,6 @@ export default function CourseView() {
     setCompletedModules(completed);
   }, [courseProgress]);
 
-  // Reset module start time whenever the selected module changes
   useEffect(() => {
     moduleStartTime.current = Date.now();
   }, [selectedModuleIndex]);
@@ -279,14 +161,12 @@ export default function CourseView() {
     }
     if (selectedModuleIndex < modules.length - 1) {
       setSelectedModuleIndex(selectedModuleIndex + 1);
-      // moduleStartTime is reset by useEffect when selectedModuleIndex changes
     }
   };
 
   const goToPrevModule = () => {
     if (selectedModuleIndex > 0) {
       setSelectedModuleIndex(selectedModuleIndex - 1);
-      // moduleStartTime is reset by useEffect when selectedModuleIndex changes
     }
   };
 
@@ -325,20 +205,29 @@ export default function CourseView() {
   const isGenerating = (course.curriculum as any)?.generating === true || modules.length === 0;
   const moduleContent = currentModule?.content as any;
 
+  const getFullContent = () => {
+    if (!moduleContent) return "";
+    const parts = [];
+    if (moduleContent.overview) parts.push(moduleContent.overview);
+    if (moduleContent.detailedExplanation) parts.push(moduleContent.detailedExplanation);
+    if (moduleContent.keyPoints?.length) parts.push(moduleContent.keyPoints.join(". "));
+    return parts.join("\n\n");
+  };
+
   return (
     <Layout>
       <div className="min-h-screen bg-background">
         <div className="flex h-[calc(100vh-64px)]">
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <div className="flex items-center justify-between mb-6">
                 <button
                   onClick={() => navigate("/dashboard")}
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   data-testid="button-back-dashboard"
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Dashboard
+                  <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+                  Back
                 </button>
                 
                 <Button
@@ -348,426 +237,307 @@ export default function CourseView() {
                   className="gap-2 lg:hidden"
                   data-testid="button-toggle-chat"
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  {showChatPanel ? "Hide Chat" : "Show Chat"}
+                  <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
                 </Button>
               </div>
 
               <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar */}
-            <aside className="lg:w-80 shrink-0">
-              <div className="sticky top-24 space-y-6">
-                {/* Course Info Card */}
-                <div className="p-6 rounded-2xl bg-card border border-border/50">
-                  <h1 className="text-xl font-semibold mb-2">{course.title}</h1>
-                  <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
-                  
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                    <span className="flex items-center gap-1">
-                      <BookOpen className="w-4 h-4" />
-                      {modules.length} modules
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {course.estimatedHours || 0}h
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">
-                        {modules.length > 0 ? Math.round((completedModules.size / modules.length) * 100) : 0}%
-                      </span>
+                {/* Sidebar */}
+                <aside className="lg:w-64 shrink-0">
+                  <div className="sticky top-6 space-y-4">
+                    <div className="p-4 bg-card border border-border">
+                      <h1 className="font-medium mb-2 line-clamp-2">{course.title}</h1>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                        <span className="flex items-center gap-1">
+                          <BookOpen className="w-3 h-3" strokeWidth={1.5} />
+                          {modules.length}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" strokeWidth={1.5} />
+                          {course.estimatedHours || 0}h
+                        </span>
+                      </div>
+                      <Progress 
+                        value={modules.length > 0 ? (completedModules.size / modules.length) * 100 : 0} 
+                        className="h-1" 
+                      />
                     </div>
-                    <Progress 
-                      value={modules.length > 0 ? (completedModules.size / modules.length) * 100 : 0} 
-                      className="h-2" 
-                    />
-                  </div>
-                </div>
 
-                {/* Modules List Card */}
-                <div className="p-4 rounded-2xl bg-card border border-border/50">
-                  <div className="flex items-center justify-between mb-4 px-2">
-                    <h3 className="font-medium">Modules</h3>
-                    {(isStreaming || isGenerating) && (
-                      <span className="flex items-center gap-1.5 text-xs text-accent">
-                        <Sparkles className="w-3 h-3 animate-pulse" />
-                        Generating...
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    {isGenerating && modules.length === 0 ? (
-                      <>
-                        {[1, 2, 3, 4].map((i) => (
-                          <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
-                            <div className="w-6 h-6 rounded-full bg-muted animate-pulse" />
-                            <div className="h-4 bg-muted rounded animate-pulse flex-1" />
+                    <div className="bg-card border border-border">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Modules</span>
+                        {(isStreaming || isGenerating) && (
+                          <Sparkles className="w-3 h-3 text-accent animate-pulse" />
+                        )}
+                      </div>
+                      <div className="p-2">
+                        {isGenerating && modules.length === 0 ? (
+                          <div className="space-y-2 p-2">
+                            {[1, 2, 3, 4].map((i) => (
+                              <div key={i} className="h-8 bg-muted animate-pulse" />
+                            ))}
                           </div>
-                        ))}
-                      </>
-                    ) : (
-                      modules.map((module, idx) => {
-                        const moduleLoading = isModuleLoading(module);
-                        const isCompleted = completedModules.has(module.id);
-                        return (
-                          <button
-                            key={module.id}
-                            onClick={() => setSelectedModuleIndex(idx)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
-                              idx === selectedModuleIndex
-                                ? "bg-primary/10 text-primary"
-                                : isCompleted
-                                  ? "text-green-400 hover:bg-muted"
-                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            }`}
-                            data-testid={`button-module-${idx}`}
-                          >
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                              isCompleted
-                                ? "bg-green-500 text-white"
-                                : idx === selectedModuleIndex
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground"
-                            }`}>
-                              {moduleLoading ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : isCompleted ? (
-                                <Check className="w-3 h-3" />
-                              ) : (
-                                idx + 1
+                        ) : (
+                          modules.map((module, idx) => {
+                            const loading = isModuleLoading(module);
+                            const done = completedModules.has(module.id);
+                            return (
+                              <button
+                                key={module.id}
+                                onClick={() => setSelectedModuleIndex(idx)}
+                                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                                  idx === selectedModuleIndex
+                                    ? "bg-foreground/5 text-foreground"
+                                    : done
+                                      ? "text-muted-foreground"
+                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                }`}
+                                data-testid={`button-module-${idx}`}
+                              >
+                                <span className={`w-5 h-5 flex items-center justify-center text-xs ${
+                                  done ? "text-green-500" : ""
+                                }`}>
+                                  {loading ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : done ? (
+                                    <Check className="w-3 h-3" strokeWidth={2} />
+                                  ) : (
+                                    <span className="opacity-50">{idx + 1}</span>
+                                  )}
+                                </span>
+                                <span className="truncate flex-1">{module.title}</span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+
+                {/* Main Content */}
+                <main className="flex-1 min-w-0">
+                  <AnimatePresence mode="wait">
+                    {isGenerating && !currentModule ? (
+                      <motion.div
+                        key="generating"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex flex-col items-center justify-center py-20"
+                      >
+                        <GeneratingLoader size="lg" />
+                        <p className="mt-6 text-muted-foreground">Creating your course...</p>
+                      </motion.div>
+                    ) : currentModule ? (
+                      <motion.div
+                        key={currentModule.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="space-y-6"
+                      >
+                        {/* Module Header */}
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Module {selectedModuleIndex + 1} of {modules.length}
+                          </p>
+                          <h2 className="text-2xl font-medium">{currentModule.title}</h2>
+                        </div>
+
+                        {isModuleLoading(currentModule) ? (
+                          <div className="flex flex-col items-center justify-center py-16">
+                            <GeneratingLoader size="sm" />
+                            <p className="mt-4 text-sm text-muted-foreground">Generating content...</p>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Audio Player */}
+                            {moduleContent?.overview && (
+                              <AudioPlayer 
+                                content={getFullContent()} 
+                                title={currentModule.title}
+                              />
+                            )}
+
+                            {/* Main Content */}
+                            <div className="prose prose-neutral dark:prose-invert max-w-none">
+                              {moduleContent?.overview && (
+                                <p className="text-foreground/90 leading-relaxed">
+                                  {moduleContent.overview}
+                                </p>
+                              )}
+
+                              {moduleContent?.keyPoints?.length > 0 && (
+                                <div className="my-6 p-4 bg-muted/30 border-l-2 border-foreground/20">
+                                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">Key points</p>
+                                  <ul className="space-y-2 list-none pl-0 mb-0">
+                                    {moduleContent.keyPoints.map((point: string, i: number) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                                        <span className="text-muted-foreground mt-0.5">•</span>
+                                        {point}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {moduleContent?.detailedExplanation && (
+                                <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
+                                  {moduleContent.detailedExplanation}
+                                </p>
                               )}
                             </div>
-                            <span className="truncate flex-1">{module.title}</span>
-                            {isCompleted && <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-            </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 min-w-0">
-              <AnimatePresence mode="wait">
-                {isGenerating && !currentModule ? (
-                  <motion.div
-                    key="generating"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="space-y-6"
-                  >
-                    <div className="p-12 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
-                      <div className="mb-8">
-                        <GeneratingLoader size="lg" />
-                      </div>
-                      <h3 className="text-2xl font-semibold mb-3">Creating your course...</h3>
-                      <p className="text-muted-foreground max-w-lg mb-6">
-                        AI is designing your personalized curriculum with interactive lessons, 
-                        visualizations, and practice exercises.
-                      </p>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <Loader2 className="w-5 h-5 animate-spin text-accent" />
-                        Generating course outline...
-                      </div>
-                    </div>
-                  </motion.div>
-                ) : currentModule ? (
-                  <motion.div
-                    key={currentModule.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="space-y-6"
-                  >
-                    {/* Module Header */}
-                    <div className="mb-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <span>Module {selectedModuleIndex + 1} of {modules.length}</span>
-                      </div>
-                      <h2 className="text-2xl md:text-3xl font-semibold">
-                        {currentModule.title}
-                      </h2>
-                      {currentModule.description && (
-                        <p className="text-muted-foreground mt-2">
-                          {currentModule.description}
-                        </p>
-                      )}
-                    </div>
+                            {/* Quiz */}
+                            {quizzes.length > 0 && (
+                              <div className="pt-6 border-t border-border">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-4">Check your understanding</p>
+                                <div className="space-y-6">
+                                  {quizzes.map((quiz, idx) => {
+                                    const options = (quiz.options as string[]) || [];
+                                    const letters = ['A', 'B', 'C', 'D'];
+                                    const correctAnswer = letters.includes(quiz.correctAnswer)
+                                      ? options[letters.indexOf(quiz.correctAnswer)]
+                                      : quiz.correctAnswer;
+                                    
+                                    return (
+                                      <div key={quiz.id} className="space-y-3">
+                                        <p className="font-medium text-sm">{quiz.question}</p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                          {options.map((opt: string, optIdx: number) => {
+                                            const selected = selectedAnswers[idx] === opt;
+                                            const revealed = showFeedback[idx];
+                                            const correct = opt === correctAnswer;
 
-                    {isModuleLoading(currentModule) ? (
-                      /* Loading Skeleton Cards */
-                      <div className="space-y-6">
-                        <div className="p-8 rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center text-center">
-                          <div className="mb-6">
-                            <GeneratingLoader size="sm" />
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">Generating lesson content...</h3>
-                          <p className="text-sm text-muted-foreground max-w-md">
-                            Creating explanations, visualizations, and practice exercises.
-                          </p>
-                        </div>
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="p-6 rounded-2xl bg-card border border-border/50">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 rounded-lg bg-muted animate-pulse" />
-                              <div className="h-5 w-32 bg-muted rounded animate-pulse" />
-                            </div>
-                            <div className="space-y-3">
-                              <div className="h-4 bg-muted/50 rounded animate-pulse" />
-                              <div className="h-4 bg-muted/50 rounded animate-pulse w-3/4" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      /* Content Cards Grid */
-                      <div className="grid gap-6">
-                        {/* Overview Card */}
-                        {moduleContent?.overview && (
-                          <ContentCard 
-                            title="Overview" 
-                            icon={BookMarked} 
-                            accentColor="primary"
-                            textContent={moduleContent.overview}
-                          >
-                            <p className="text-foreground/90 leading-relaxed whitespace-pre-line">
-                              {moduleContent.overview}
-                            </p>
-                          </ContentCard>
-                        )}
-
-                        {/* Key Concepts Card */}
-                        {moduleContent?.keyPoints && moduleContent.keyPoints.length > 0 && (
-                          <ContentCard 
-                            title="Key Concepts" 
-                            icon={Lightbulb} 
-                            accentColor="accent"
-                            defaultOpen={true}
-                            textContent={moduleContent.keyPoints.join('. ')}
-                          >
-                            <ul className="space-y-3">
-                              {moduleContent.keyPoints.map((point: string, i: number) => (
-                                <li key={i} className="flex items-start gap-3">
-                                  <div className="mt-1 p-1 rounded-full bg-accent/20">
-                                    <Check className="w-3 h-3 text-accent" />
-                                  </div>
-                                  <span className="text-foreground/80">{point}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </ContentCard>
-                        )}
-
-                        {/* Detailed Explanation Card */}
-                        {moduleContent?.detailedExplanation && (
-                          <ContentCard 
-                            title="Deep Dive" 
-                            icon={GraduationCap} 
-                            accentColor="blue"
-                            defaultOpen={false}
-                            textContent={moduleContent.detailedExplanation}
-                          >
-                            <div className="prose prose-invert prose-sm max-w-none">
-                              <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
-                                {moduleContent.detailedExplanation}
-                              </p>
-                            </div>
-                          </ContentCard>
-                        )}
-
-                        {/* Examples Card */}
-                        {moduleContent?.examples && moduleContent.examples.length > 0 && (
-                          <ContentCard title="Examples" icon={Target} accentColor="green" defaultOpen={false}>
-                            <div className="space-y-4">
-                              {moduleContent.examples.map((example: any, i: number) => (
-                                <div key={i} className="p-4 rounded-xl bg-muted/30 border border-border/30">
-                                  {typeof example === 'string' ? (
-                                    <p className="text-foreground/80">{example}</p>
-                                  ) : (
-                                    <>
-                                      {example.title && (
-                                        <h4 className="font-medium mb-2">{example.title}</h4>
-                                      )}
-                                      <p className="text-foreground/80">{example.content || example.description}</p>
-                                    </>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </ContentCard>
-                        )}
-
-                        {/* Knowledge Check Card */}
-                        {quizzes.length > 0 && (
-                          <ContentCard title="Knowledge Check" icon={Zap} accentColor="accent" defaultOpen={false}>
-                            <div className="space-y-6">
-                              {quizzes.map((quiz, idx) => {
-                                const options = (quiz.options as string[]) || [];
-                                const letterIndex = ['A', 'B', 'C', 'D'];
-                                const correctAnswerText = letterIndex.includes(quiz.correctAnswer)
-                                  ? options[letterIndex.indexOf(quiz.correctAnswer)]
-                                  : quiz.correctAnswer;
-                                
-                                return (
-                                  <div key={quiz.id} className="space-y-4">
-                                    <p className="font-medium">{idx + 1}. {quiz.question}</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      {options.map((opt: string, optIdx: number) => {
-                                        const isSelected = selectedAnswers[idx] === opt;
-                                        const showResult = showFeedback[idx];
-                                        const isCorrect = opt === correctAnswerText;
-
-                                        return (
-                                          <button
-                                            key={opt}
-                                            onClick={() => !showResult && checkAnswer(idx, opt)}
-                                            disabled={showResult}
-                                            className={`p-4 rounded-xl text-left text-sm transition-all ${
-                                              showResult
-                                                ? isCorrect
-                                                  ? "bg-green-500/20 border-2 border-green-500/50"
-                                                  : isSelected
-                                                    ? "bg-red-500/20 border-2 border-red-500/50"
-                                                    : "bg-muted/30 border border-border/30 opacity-50"
-                                                : isSelected
-                                                  ? "bg-primary/10 border-2 border-primary/50"
-                                                  : "bg-muted/30 border border-border/30 hover:bg-muted/50 hover:border-border/50"
-                                            }`}
-                                            data-testid={`button-quiz-${idx}-option-${optIdx}`}
-                                          >
-                                            <span className="flex items-center gap-3">
-                                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                                                {letterIndex[optIdx]}
-                                              </span>
-                                              {showResult && isCorrect && <Check className="w-4 h-4 text-green-400 ml-auto" />}
-                                              {showResult && isSelected && !isCorrect && <X className="w-4 h-4 text-red-400 ml-auto" />}
-                                              <span className="flex-1">{opt}</span>
-                                            </span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                    {showFeedback[idx] && quiz.explanation && (
-                                      <div className="p-4 rounded-xl bg-muted/30 border border-border/30">
-                                        <p className="text-sm text-muted-foreground">
-                                          <span className="font-medium text-foreground">Explanation: </span>
-                                          {quiz.explanation}
-                                        </p>
+                                            return (
+                                              <button
+                                                key={opt}
+                                                onClick={() => !revealed && checkAnswer(idx, opt)}
+                                                disabled={revealed}
+                                                className={`p-3 text-left text-sm border transition-colors ${
+                                                  revealed
+                                                    ? correct
+                                                      ? "border-green-500 bg-green-500/10"
+                                                      : selected
+                                                        ? "border-red-500 bg-red-500/10"
+                                                        : "border-border opacity-50"
+                                                    : selected
+                                                      ? "border-foreground bg-foreground/5"
+                                                      : "border-border hover:border-foreground/50"
+                                                }`}
+                                                data-testid={`button-quiz-${idx}-option-${optIdx}`}
+                                              >
+                                                <span className="flex items-center gap-3">
+                                                  <span className="w-5 h-5 flex items-center justify-center text-xs text-muted-foreground">
+                                                    {letters[optIdx]}
+                                                  </span>
+                                                  <span className="flex-1">{opt}</span>
+                                                  {revealed && correct && <Check className="w-4 h-4 text-green-500" />}
+                                                  {revealed && selected && !correct && <X className="w-4 h-4 text-red-500" />}
+                                                </span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                        {showFeedback[idx] && quiz.explanation && (
+                                          <p className="text-xs text-muted-foreground pl-8">
+                                            {quiz.explanation}
+                                          </p>
+                                        )}
                                       </div>
-                                    )}
-                                    {idx < quizzes.length - 1 && (
-                                      <div className="border-t border-border/30 pt-4" />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </ContentCard>
-                        )}
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
-                        {/* Resources Card */}
-                        {resources.length > 0 && (
-                          <ContentCard title="Further Reading" icon={FileText} accentColor="primary" defaultOpen={false}>
-                            <div className="grid gap-3">
-                              {resources.map((resource) => (
-                                <a
-                                  key={resource.id}
-                                  href={resource.url || "#"}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-start gap-4 p-4 rounded-xl bg-muted/30 border border-border/30 hover:bg-muted/50 hover:border-primary/30 transition-all group"
+                            {/* Resources */}
+                            {resources.length > 0 && (
+                              <div className="pt-6 border-t border-border">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">Further reading</p>
+                                <div className="space-y-2">
+                                  {resources.map((r) => (
+                                    <a
+                                      key={r.id}
+                                      href={r.url || "#"}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-3 p-3 border border-border hover:border-foreground/30 transition-colors group"
+                                    >
+                                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0" strokeWidth={1.5} />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate group-hover:text-foreground">{r.title}</p>
+                                        {r.author && <p className="text-xs text-muted-foreground">{r.author}</p>}
+                                      </div>
+                                      <span className="text-xs text-muted-foreground capitalize">{r.type}</span>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Navigation */}
+                            <div className="flex items-center justify-between pt-6 border-t border-border">
+                              <Button
+                                onClick={goToPrevModule}
+                                disabled={selectedModuleIndex === 0}
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                              >
+                                <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+                                Previous
+                              </Button>
+                              
+                              {selectedModuleIndex < modules.length - 1 ? (
+                                <Button
+                                  onClick={goToNextModule}
+                                  size="sm"
+                                  className="gap-2"
+                                  disabled={markModuleComplete.isPending}
                                 >
-                                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                    <ExternalLink className="w-4 h-4" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium text-sm group-hover:text-primary transition-colors">
-                                      {resource.title}
-                                    </h4>
-                                    {resource.author && (
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        by {resource.author}
-                                      </p>
-                                    )}
-                                    {resource.summary && (
-                                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                        {resource.summary}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground capitalize shrink-0">
-                                    {resource.type}
-                                  </span>
-                                </a>
-                              ))}
+                                  {completedModules.has(currentModule?.id || '') ? 'Next' : 'Complete'}
+                                  <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={handleCompleteCourse}
+                                  size="sm"
+                                  className="gap-2"
+                                  disabled={markModuleComplete.isPending}
+                                >
+                                  <CheckCircle className="w-4 h-4" strokeWidth={1.5} />
+                                  Finish
+                                </Button>
+                              )}
                             </div>
-                          </ContentCard>
+                          </>
                         )}
-
-                        {/* Navigation */}
-                        <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                          <Button
-                            onClick={goToPrevModule}
-                            disabled={selectedModuleIndex === 0}
-                            variant="outline"
-                            className="gap-2"
-                          >
-                            <ArrowLeft className="w-4 h-4" />
-                            Previous
-                          </Button>
-                          
-                          {selectedModuleIndex < modules.length - 1 ? (
-                            <Button
-                              onClick={goToNextModule}
-                              className="gap-2"
-                              disabled={markModuleComplete.isPending}
-                            >
-                              {completedModules.has(currentModule?.id || '') ? 'Next Module' : 'Complete & Continue'}
-                              <ArrowRight className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={handleCompleteCourse}
-                              className="gap-2 bg-green-600 hover:bg-green-700"
-                              disabled={markModuleComplete.isPending}
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              Complete Course
-                            </Button>
-                          )}
-                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="flex items-center justify-center py-20">
+                        <p className="text-muted-foreground">Select a module</p>
                       </div>
                     )}
-                  </motion.div>
-                ) : (
-                  <div className="flex items-center justify-center py-20">
-                    <p className="text-muted-foreground">Select a module to begin</p>
-                  </div>
-                )}
-              </AnimatePresence>
-            </main>
+                  </AnimatePresence>
+                </main>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-          {/* AI Chat Panel */}
+          {/* Chat Panel */}
           <AnimatePresence>
             {showChatPanel && courseId && (
               <motion.aside
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 380, opacity: 1 }}
+                animate={{ width: 360, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="hidden lg:flex flex-col border-l border-border/50 bg-card/50 overflow-hidden"
+                className="hidden lg:flex flex-col border-l border-border bg-card/50 overflow-hidden"
               >
                 <div className="flex-1 flex flex-col h-full">
-                  <div className="h-1/2 border-b border-border/50">
+                  <div className="h-1/2 border-b border-border">
                     <SourcesPanel notebookId={courseId} />
                   </div>
                   <div className="h-1/2">
