@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, Brain, MessageSquare, Target, Zap, Layers } from 
 import { Button } from "@/components/ui/button";
 import { NoiseOverlay } from "@/components/NoiseOverlay";
 import { BentoCard } from "@/components/BentoCard";
+import heroBg from "@/assets/hero-bg.jpg";
 
 export default function Landing() {
   const handleLogin = () => {
@@ -29,27 +30,36 @@ export default function Landing() {
         </Button>
       </header>
 
-      <main className="relative z-10 px-6 md:px-12 lg:px-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="pt-24 md:pt-36 lg:pt-44 pb-20 md:pb-28">
+      {/* Full-width Hero */}
+      <div 
+        className="relative min-h-[80vh] md:min-h-[90vh] flex items-center"
+        style={{
+          backgroundImage: `url(${heroBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative z-10 w-full px-6 md:px-12 lg:px-20">
+          <div className="max-w-6xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="max-w-2xl"
             >
-              <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-medium leading-[1.1] tracking-tight mb-8">
+              <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-medium leading-[1.1] tracking-tight mb-8 text-white">
                 Learn anything.<br />
                 One breath at a time.
               </h1>
 
-              <p className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed">
+              <p className="text-lg md:text-xl text-white/70 mb-10 leading-relaxed">
                 Not another chat-with-PDF tool. A lab for building real understanding—where sources become structured knowledge.
               </p>
 
               <Button 
                 onClick={handleLogin}
-                className="btn-primary h-12 px-8 text-base"
+                className="h-12 px-8 text-base bg-white text-black hover:bg-white/90"
                 data-testid="button-get-started"
               >
                 Start learning
@@ -57,9 +67,14 @@ export default function Landing() {
               </Button>
             </motion.div>
           </div>
+        </div>
+      </div>
+
+      <main className="relative z-10 px-6 md:px-12 lg:px-20">
+        <div className="max-w-6xl mx-auto">
 
           {/* Bento Grid */}
-          <div className="pb-24 md:pb-32">
+          <div className="pt-24 md:pt-32 pb-24 md:pb-32">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Large feature card */}
               <BentoCard 
