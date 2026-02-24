@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import Anthropic from "@anthropic-ai/sdk";
-import { isAuthenticated } from "./replit_integrations/auth";
+import { isAuthenticated } from "./auth";
 
 // Claude model - claude-sonnet-4-20250514 is the latest
 const CLAUDE_MODEL = "claude-sonnet-4-20250514";
