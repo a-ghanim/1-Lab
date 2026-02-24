@@ -99,7 +99,6 @@ Deployment instructions are intentionally kept separate and can be added in a de
 
 - Add automated test coverage (unit + API integration tests).
 - Add production-ready OIDC provider setup documentation (provider-specific examples).
-- Keep private working notes/screenshots outside the repo (or in ignored local paths).
 
 ## License
 
