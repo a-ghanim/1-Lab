@@ -8,18 +8,26 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} must be set`);
+  }
+  return value;
+}
+
+const OIDC_ISSUER_URL = requiredEnv("OIDC_ISSUER_URL");
+const OIDC_CLIENT_ID = requiredEnv("OIDC_CLIENT_ID");
+
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
+    return client.discovery(new URL(OIDC_ISSUER_URL), OIDC_CLIENT_ID);
   },
-  { maxAge: 3600 * 1000 }
+  { maxAge: 3600 * 1000 },
 );
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
@@ -27,36 +35,38 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: requiredEnv("SESSION_SECRET"),
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       maxAge: sessionTtl,
     },
   });
 }
 
 function updateUserSession(
-  user: any,
-  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
+  user: Record<string, unknown>,
+  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
 ) {
-  user.claims = tokens.claims();
+  const claims = tokens.claims();
+  user.claims = claims;
   user.access_token = tokens.access_token;
   user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
+  user.expires_at = claims?.exp;
 }
 
-async function upsertUser(claims: any) {
+async function upsertUser(claims: Record<string, any>) {
   await authStorage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
+    id: claims.sub,
+    email: claims.email,
+    firstName: claims.first_name,
+    lastName: claims.last_name,
+    profileImageUrl: claims.profile_image_url,
   });
 }
 
@@ -68,31 +78,29 @@ export async function setupAuth(app: Express) {
 
   const config = await getOidcConfig();
 
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const user = {};
+  const verify: VerifyFunction = async (tokens, verified) => {
+    const user: Record<string, unknown> = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    const claims = tokens.claims();
+    if (claims) {
+      await upsertUser(claims as Record<string, any>);
+    }
     verified(null, user);
   };
 
-  // Keep track of registered strategies
   const registeredStrategies = new Set<string>();
 
-  // Helper function to ensure strategy exists for a domain
   const ensureStrategy = (domain: string) => {
-    const strategyName = `replitauth:${domain}`;
+    const strategyName = `oidc:${domain}`;
     if (!registeredStrategies.has(strategyName)) {
       const strategy = new Strategy(
         {
           name: strategyName,
           config,
           scope: "openid email profile offline_access",
-          callbackURL: `https://${domain}/api/callback`,
+          callbackURL: `${process.env.APP_ORIGIN ?? `https://${domain}`}/api/callback`,
         },
-        verify
+        verify,
       );
       passport.use(strategy);
       registeredStrategies.add(strategyName);
@@ -104,7 +112,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(`oidc:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
@@ -112,7 +120,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(`oidc:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
@@ -122,9 +130,9 @@ export async function setupAuth(app: Express) {
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
+          client_id: OIDC_CLIENT_ID,
+          post_logout_redirect_uri: process.env.APP_ORIGIN ?? `${req.protocol}://${req.hostname}`,
+        }).href,
       );
     });
   });
@@ -144,8 +152,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
@@ -153,8 +160,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
     return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  } catch (_error) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
 };

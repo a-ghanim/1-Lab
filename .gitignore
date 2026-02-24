@@ -1,6 +1,30 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Runtime artifacts
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS / Editor
 .DS_Store
-server/public
-vite.config.ts.*
+.vscode/
+.idea/
+
+# Local app artifacts
+server/public/
 *.tar.gz
+attached_assets/
