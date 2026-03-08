@@ -1,5 +1,6 @@
 {
-  "name": "rest-express",
+  "name": "one-breath-lab",
+  "description": "AI-powered notebook-style learning platform",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
