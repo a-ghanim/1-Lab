@@ -1,29 +1,31 @@
 # One Breath Lab
 
-A notebook-style AI learning assistant that turns any topic into a structured course with source-grounded chat, progress tracking, and study tools.
+AI-powered learning platform that turns any topic into a structured course with chat, quizzes, and progress tracking.
 
-> Screenshot / demo: _Add screenshot or deployed demo link here._
+<!-- Add a screenshot or demo link here -->
 
 ## Tech Stack
 
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, Wouter, TanStack Query
 - **Backend:** Node.js, Express, TypeScript
-- **Database:** PostgreSQL + Drizzle ORM
-- **Auth:** OIDC via `openid-client` + Passport
-- **AI:** Anthropic API
+- **Database:** PostgreSQL, Drizzle ORM
+- **Auth:** OIDC via openid-client + Passport
+- **AI:** Anthropic Claude API
 
 ## Features
 
-- OIDC authentication and persistent sessions
-- AI-generated curriculum and module content
-- Source management (text/URL) + source-grounded notebook chat
-- Module quizzes, resources, and progress tracking
-- Learning productivity features: streaks, goals, bookmarks, notes, flashcards
-- Organization and sharing: folders, shared courses, certificates, custom quizzes
+- AI-generated curriculum and module content from any topic prompt
+- Source-grounded notebook chat (add text or URLs as context)
+- Module quizzes, resources, and detailed progress tracking
+- Spaced-repetition flashcards with SM-2 algorithm
+- Focus timer, streaks, achievements, and weekly learning goals
+- Course sharing via public links and completion certificates
+- Folders, bookmarks, and notes for organization
+- Light/dark theme
 
 ## Getting Started
 
-### 1) Clone and install
+### 1. Clone and install
 
 ```bash
 git clone <your-repo-url>
@@ -31,23 +33,29 @@ cd 1-Lab
 npm install
 ```
 
-### 2) Configure environment
+### 2. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Update `.env` with your own values.
+Fill in your `.env` values (see table below).
 
-### 3) Start development server
+### 3. Set up the database
+
+```bash
+npm run db:push
+```
+
+### 4. Start development server
 
 ```bash
 npm run dev
 ```
 
-App runs on `http://localhost:5000` by default.
+The app runs on [http://localhost:5000](http://localhost:5000).
 
-### 4) Type-check and build
+### 5. Type-check and build
 
 ```bash
 npm run check
@@ -59,46 +67,41 @@ npm run start
 
 | Variable | Required | Description |
 |---|---|---|
-| `NODE_ENV` | No | Runtime mode (`development` or `production`). |
-| `PORT` | No | HTTP port for API + frontend server (default `5000`). |
-| `APP_ORIGIN` | Recommended | Public origin used for auth callbacks/logout redirects. |
-| `DATABASE_URL` | Yes | PostgreSQL connection string. |
-| `SESSION_SECRET` | Yes | Secret for signing session cookies. |
-| `OIDC_ISSUER_URL` | Yes | OIDC issuer discovery URL. |
-| `OIDC_CLIENT_ID` | Yes | OIDC client ID for this application. |
-| `ANTHROPIC_API_KEY` | Optional* | API key for AI-powered generation/chat features. |
-
-\* Without `ANTHROPIC_API_KEY`, AI endpoints are unavailable but the app can still boot.
+| `NODE_ENV` | No | `development` or `production` |
+| `PORT` | No | Server port (default `5000`) |
+| `APP_ORIGIN` | Recommended | Public origin for auth callbacks/redirects |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `SESSION_SECRET` | Yes | Secret for signing session cookies |
+| `OIDC_ISSUER_URL` | Yes | OIDC issuer discovery URL |
+| `OIDC_CLIENT_ID` | Yes | OIDC client ID |
+| `ANTHROPIC_API_KEY` | Optional | API key for AI features (app boots without it) |
 
 ## Project Structure
 
-```text
-client/                 # React frontend
+```
+client/           # React frontend (Vite)
   src/
-server/                 # Express API + auth + app server
-  auth/                 # OIDC auth/session integration
-shared/                 # Shared DB schema and types
-script/                 # Build scripts
+    components/   # UI and feature components
+    pages/        # Route pages
+    hooks/        # Custom React hooks
+    lib/          # Utilities and API client
+server/           # Express API server
+  auth/           # OIDC authentication
+shared/           # Database schema and shared types
+script/           # Build scripts
 ```
 
-## Docker (Optional)
-
-For local containerized setup:
+## Docker
 
 ```bash
 docker compose up --build
 ```
 
-This starts the app and a local PostgreSQL instance.
+Starts the app and a local PostgreSQL instance.
 
 ## Deployment
 
-Deployment instructions are intentionally kept separate and can be added in a dedicated deployment guide.
-
-## TODO / Known Follow-ups
-
-- Add automated test coverage (unit + API integration tests).
-- Add production-ready OIDC provider setup documentation (provider-specific examples).
+Deployment instructions can be added in a separate guide.
 
 ## License
 
